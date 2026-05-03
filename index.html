@@ -115,8 +115,18 @@
             </div>
             <div class="text-center text-xs text-slate-400 mt-8 font-bold italic admin-block">Halaman ini hanya terlihat oleh Admin.</div>
             
+            <!-- Zona Maintenance (Sinkronisasi Ulang) -->
+            <div class="admin-block mt-6 p-5 bg-amber-50 border border-amber-200 rounded-3xl shadow-sm">
+                <h3 class="text-[10px] font-black text-amber-600 mb-2 flex items-center gap-2 uppercase tracking-widest">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                    MAINTENANCE DATA (SINKRONISASI)
+                </h3>
+                <p class="text-[9px] font-bold text-slate-500 leading-relaxed mb-4">Fitur ini menghitung ulang total Pemasukan, Pengeluaran, dan Saldo BKU dari nol berdasarkan jumlah riwayat data yang aktual. Gunakan jika nominal Dashboard error akibat penghapusan via console.</p>
+                <button onclick="actionSinkronKas()" class="w-full bg-amber-500 text-white py-4 rounded-2xl font-bold active:scale-95 transition uppercase text-xs tracking-widest shadow-lg shadow-amber-200">SINKRONISASI KAS SEKARANG</button>
+            </div>
+
             <!-- Zona Berbahaya untuk Tutup Buku -->
-            <div class="admin-block mt-6 p-5 bg-rose-50 border border-rose-200 rounded-3xl shadow-sm">
+            <div class="admin-block mt-4 p-5 bg-rose-50 border border-rose-200 rounded-3xl shadow-sm">
                 <h3 class="text-[10px] font-black text-rose-600 mb-2 flex items-center gap-2 uppercase tracking-widest">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
                     DANGER ZONE (ZONA BERBAHAYA)
@@ -344,7 +354,7 @@
     <!-- Loading Overlay Pemblokir UI untuk Proses Massal / Tutup Buku -->
     <div id="loading-overlay" class="hidden fixed inset-0 bg-slate-900/95 backdrop-blur-md z-[9999] flex flex-col items-center justify-center p-6 transition-opacity duration-300">
         <svg class="animate-spin h-14 w-14 text-rose-500 mb-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-        <h2 class="text-white font-black uppercase tracking-widest text-xl animate-pulse text-center">SEDANG TUTUP BUKU...</h2>
+        <h2 id="loading-title" class="text-white font-black uppercase tracking-widest text-xl animate-pulse text-center">SEDANG MEMPROSES...</h2>
         <p class="text-rose-400 font-bold text-[10px] uppercase tracking-widest mt-4 text-center leading-relaxed">JANGAN TUTUP, MINIMIZE, ATAU REFRESH APLIKASI INI!<br>DATABASE ANDA BISA RUSAK TOTAL.</p>
     </div>
 

@@ -969,6 +969,59 @@ window.adminDeleteBKU = async (id) => {
     } catch (e) { appDialog({title: 'Error', message: e.message, type: 'error'}); }
 };
 
+// [MAINTENANCE] FITUR SINKRONISASI KAS (AUTO-RECALCULATE)
+window.actionSinkronKas = async () => {
+    if (!currentUser) return;
+    
+    const keyword = "SINKRON BKU";
+    const konfirmasi = await appDialog({
+        title: 'SINKRONISASI ULANG', 
+        message: `Sistem akan membaca SELURUH riwayat kas dan mencetak ulang saldo total di Dashboard agar sesuai dengan realita data.\n\nKetik persis: "${keyword}"`, 
+        type: 'prompt'
+    });
+
+    if (konfirmasi !== keyword) {
+        if (konfirmasi !== null) appDialog({title: 'Dibatalkan', message: 'Kata kunci salah.', type: 'error'});
+        return;
+    }
+
+    const loadingUI = document.getElementById('loading-overlay');
+    const loadingTitle = document.getElementById('loading-title');
+    if(loadingTitle) loadingTitle.innerText = "MENGHITUNG ULANG KAS...";
+    if(loadingUI) loadingUI.classList.remove('hidden');
+
+    try {
+        // [MENTOR NOTE] Baca paksa seluruh data (Get Docs One-Time) tanpa limit.
+        const bkuSnap = await getDocs(collection(db, "bku_transactions"));
+        
+        let totalIncome = 0;
+        let totalExpense = 0;
+
+        bkuSnap.docs.forEach(doc => {
+            const data = doc.data();
+            if (data.type === 'DEBIT') totalIncome += data.amount;
+            else if (data.type === 'CREDIT') totalExpense += data.amount;
+        });
+
+        const totalBalance = totalIncome - totalExpense;
+
+        // Tembakkan pembaruan absolut secara atomik
+        await updateDoc(doc(db, "metadata", "stats"), {
+            total_income_bku: totalIncome,
+            total_expense_bku: totalExpense,
+            total_balance_bku: totalBalance
+        });
+
+        if(loadingUI) loadingUI.classList.add('hidden');
+        appDialog({title: 'Sinkronisasi Berhasil', message: `Data tersinkron:\nPemasukan: Rp ${formatRupiahInput(totalIncome.toString())}\nPengeluaran: Rp ${formatRupiahInput(totalExpense.toString())}\nSaldo Akhir: Rp ${formatRupiahInput(totalBalance.toString())}`, type: 'success'});
+        
+    } catch (e) {
+        if(loadingUI) loadingUI.classList.add('hidden');
+        console.error(e);
+        appDialog({title: 'FATAL ERROR', message: 'Gagal sinkronisasi data: ' + e.message, type: 'error'});
+    }
+};
+
 // [F] FITUR TUTUP BUKU (ROLLOVER SYSTEM) - HIGH RISK
 window.actionTutupBuku = async () => {
     if (!currentUser) return;
@@ -988,6 +1041,8 @@ window.actionTutupBuku = async () => {
     }
 
     const loadingUI = document.getElementById('loading-overlay');
+    const loadingTitle = document.getElementById('loading-title');
+    if(loadingTitle) loadingTitle.innerText = "SEDANG TUTUP BUKU...";
     if(loadingUI) loadingUI.classList.remove('hidden');
 
     try {
@@ -1026,7 +1081,7 @@ window.actionTutupBuku = async () => {
                 type: totalBalanceBku > 0 ? "DEBIT" : "CREDIT",
                 category: "SALDO AWAL",
                 amount: Math.abs(totalBalanceBku),
-                note: `Sisa Kas Bawaan setelah Tutup Buku`,
+                note: `Sisa Kas Bawaan setelah Tutup Bukudari Periode Sebelumnya`,
                 month_year: MY,
                 timestamp: ts
             });
