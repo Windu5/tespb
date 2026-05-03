@@ -1,10 +1,10 @@
 /*
 =========================================================
 PB. BATU BETULIS - CORE APPLICATION LOGIC
-[MENTOR NOTE]
-1. Logika 'Two-Way Binding' telah dipasang kuat dan dihubungkan ke ID HTML yang tepat.
-2. Penangkapan Value untuk aksi Submit Deposit telah dialihkan ke field Qty (input-deposit-qty).
-3. Modul KAS dipaksa menarik 'valueAsDate' ke dalam format realtime untuk mem-bypass error 00:00 Firestore.
+[MENTOR NOTE: PERBAIKAN KRUSIAL]
+1. Fungsi formatRupiahInput() untuk memformat angka dengan titik ribuan secara live.
+2. Fungsi parseRupiahInt() HARUS dipakai menggantikan parseInt biasa agar data DB tidak korup.
+3. Fitur Kembalian di-inject ke dalam Two-Way Binding Deposit, tapi INGAT: Yang masuk database tetap mutlak harga bersih kok.
 =========================================================
 */
 
@@ -36,10 +36,30 @@ let allMembers = [];
 let currentCockPrice = 3000;
 
 // ==========================================
-// 1. HELPER FUNCTIONS
+// 1. HELPER FUNCTIONS & FORMATTERS
 // ==========================================
 
-// Koreksi Waktu Kalender
+// Fungsi Helper untuk memformat angka jadi format 10.000 (Pemisah Ribuan)
+function formatRupiahInput(value) {
+    if (!value) return '';
+    let numberString = value.toString().replace(/[^,\d]/g, '');
+    let split = numberString.split(',');
+    let sisa = split[0].length % 3;
+    let rupiah = split[0].substr(0, sisa);
+    let ribuan = split[0].substr(sisa).match(/\d{3}/gi);
+    if (ribuan) {
+        let separator = sisa ? '.' : '';
+        rupiah += separator + ribuan.join('.');
+    }
+    return split[1] != undefined ? rupiah + ',' + split[1] : rupiah;
+}
+
+// WAJIB DIPAKAI UNTUK MENYIMPAN KE DATABASE! Mengubah 10.000 menjadi 10000.
+function parseRupiahInt(value) {
+    if (!value) return 0;
+    return parseInt(value.toString().replace(/\./g, '')) || 0;
+}
+
 function processRealtimeDate(dateString) {
     if (!dateString) return serverTimestamp(); 
     const d = new Date(dateString);
@@ -48,34 +68,57 @@ function processRealtimeDate(dateString) {
     return d;
 }
 
-// Sistem Two-Way Binding Deposit (Kunci Anti-Pecahan)
-function bindDepositInputs(qtyId, nomId) {
+// Sistem Two-Way Binding Deposit DENGAN FITUR KEMBALIAN
+function bindDepositInputs(qtyId, nomId, kembalianId) {
     const elQty = document.getElementById(qtyId);
     const elNom = document.getElementById(nomId);
+    const elKembalian = document.getElementById(kembalianId);
     if (!elQty || !elNom) return;
 
-    // Ketik Qty -> Isi Nominal
+    // Saat ngetik Qty (Kok)
     elQty.addEventListener('input', (e) => {
         const q = parseInt(e.target.value) || 0;
-        elNom.value = q > 0 ? (q * currentCockPrice) : '';
+        const totalCost = q * currentCockPrice;
+        elNom.value = q > 0 ? formatRupiahInput(totalCost) : '';
+        if (elKembalian) elKembalian.innerText = 'Rp 0';
     });
 
-    // Ketik Nominal -> Isi Qty (Otomatis pembulatan lantai)
+    // Saat ngetik Nominal Uang Fisik (Contoh Ngetik 10000 jadi 10.000)
     elNom.addEventListener('input', (e) => {
-        const amt = parseInt(e.target.value) || 0;
-        const calcQty = Math.floor(amt / currentCockPrice);
+        // Format otomatis dengan titik
+        elNom.value = formatRupiahInput(e.target.value);
+        
+        // Baca angka aslinya (10000)
+        const amt = parseRupiahInt(e.target.value);
+        const calcQty = Math.floor(amt / currentCockPrice); // Jumlah kok yang didapat
+        
         elQty.value = calcQty > 0 ? calcQty : '';
+
+        // Hitung Kembalian Uang Fisik Admin
+        if (elKembalian) {
+            const actualCost = calcQty * currentCockPrice;
+            const kembalian = amt > actualCost ? amt - actualCost : 0;
+            elKembalian.innerText = "Rp " + formatRupiahInput(kembalian);
+        }
     });
 
-    // Lepas Fokus dari Nominal -> Koreksi String Nominal ke angka genap kok
-    elNom.addEventListener('blur', (e) => {
-        const amt = parseInt(e.target.value) || 0;
-        const correctQty = Math.floor(amt / currentCockPrice);
-        elNom.value = correctQty > 0 ? (correctQty * currentCockPrice) : '';
+    // Tidak ada lagi fungsi 'blur' yang me-reset nominal, biarkan nilai uang fisik tampil apa adanya
+}
+
+// Terapkan auto-format titik ribuan ke semua input nominal umum di aplikasi
+function setupRupiahFormatter() {
+    const inputIds = ['input-income-amount', 'input-expense-amount', 'edit-val-amount', 'input-setting-price'];
+    inputIds.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.addEventListener('input', function() {
+                this.value = formatRupiahInput(this.value);
+            });
+        }
     });
 }
 
-// Custom Asynchronous Dialog (Promise-based)
+// Custom Asynchronous Dialog
 window.appDialog = function(options) {
     return new Promise((resolve) => {
         const modal = document.getElementById('custom-dialog');
@@ -151,7 +194,6 @@ window.appDialog = function(options) {
 // ==========================================
 // 2. UI GLOBAL NAVIGATION
 // ==========================================
-
 window.showTab = (id, btn) => {
     document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
     document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('bottom-nav-active', 'text-slate-400'));
@@ -229,7 +271,6 @@ onAuthStateChanged(auth, (user) => {
 // ==========================================
 // 3. FIREBASE REALTIME LISTENERS
 // ==========================================
-
 onSnapshot(collection(db, "members"), (snap) => {
     allMembers = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     const countEl = document.getElementById('display-member-count');
@@ -249,13 +290,13 @@ onSnapshot(collection(db, "members"), (snap) => {
                 </div>
                 <div class="flex justify-between items-center">
                     <span class="text-[9px] text-slate-400 font-bold uppercase tracking-widest">Saldo Rupiah</span>
-                    <span class="text-[11px] font-mono font-bold ${isN ? 'text-rose-400' : 'text-slate-400'}">Rp ${(m.shuttlecock_balance * currentCockPrice).toLocaleString('id-ID')}</span>
+                    <span class="text-[11px] font-mono font-bold ${isN ? 'text-rose-400' : 'text-slate-400'}">Rp ${formatRupiahInput((m.shuttlecock_balance * currentCockPrice).toString())}</span>
                 </div>
             </div>`;
         }).join('');
     }
     const tekorEl = document.getElementById('display-total-tekor-nominal');
-    if(tekorEl) tekorEl.innerText = "Rp " + (totalT * currentCockPrice).toLocaleString('id-ID');
+    if(tekorEl) tekorEl.innerText = "Rp " + formatRupiahInput((totalT * currentCockPrice).toString());
     renderAdminUI();
 });
 
@@ -281,7 +322,7 @@ onSnapshot(query(collection(db, "shuttlecock_history"), orderBy("timestamp", "de
                             <button onclick="adminDeleteShuttlecock('${doc.id}', '${d.type}')" class="p-1 text-slate-300 hover:text-rose-500 transition"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>
                         </div>
                     </div>
-                    <p class="text-[10px] font-mono font-bold ${isU ? 'text-rose-400' : 'text-emerald-400'}">Rp ${nom.toLocaleString('id-ID')}</p>
+                    <p class="text-[10px] font-mono font-bold ${isU ? 'text-rose-400' : 'text-emerald-400'}">Rp ${formatRupiahInput(nom.toString())}</p>
                 </div>
             </div>`;
         }).join('');
@@ -303,7 +344,7 @@ onSnapshot(query(collection(db, "bku_transactions"), orderBy("timestamp", "desc"
                     <div class="flex justify-between items-end">
                         <p class="text-xs font-semibold text-slate-700 italic line-clamp-1 max-w-[50%]">"${d.note}"</p>
                         <div class="text-right flex items-center gap-2">
-                            <p class="font-black text-sm ${isD ? 'text-emerald-600' : 'text-rose-600'}">${isD ? '' : '-'}${d.amount.toLocaleString('id-ID')}</p>
+                            <p class="font-black text-sm ${isD ? 'text-emerald-600' : 'text-rose-600'}">${isD ? '' : '-'}${formatRupiahInput(d.amount.toString())}</p>
                             <div class="admin-only flex gap-1">
                                 ${d.linked_history_id ? 
                                     `<span class="p-1 text-slate-300" title="Dikunci: Edit transaksi ini melalui Tab LOG KOK"><svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg></span>` 
@@ -325,19 +366,19 @@ onSnapshot(doc(db, "metadata", "stats"), (ds) => {
         const data = ds.data();
         currentCockPrice = data.shuttlecock_price || 3000;
         const cockPriceEl = document.getElementById('display-cock-price');
-        if(cockPriceEl) cockPriceEl.innerText = "@" + currentCockPrice.toLocaleString('id-ID') + " / KOK";
+        if(cockPriceEl) cockPriceEl.innerText = "@" + formatRupiahInput(currentCockPrice.toString()) + " / KOK";
         
         const setPriceInput = document.getElementById('input-setting-price');
-        if(setPriceInput && setPriceInput.value === "") setPriceInput.value = currentCockPrice;
+        if(setPriceInput && setPriceInput.value === "") setPriceInput.value = formatRupiahInput(currentCockPrice.toString());
         
         const bkuTotalEl = document.getElementById('display-bku-total');
-        if(bkuTotalEl) bkuTotalEl.innerText = "Rp " + (data.total_balance_bku || 0).toLocaleString('id-ID'); 
+        if(bkuTotalEl) bkuTotalEl.innerText = "Rp " + formatRupiahInput((data.total_balance_bku || 0).toString()); 
         
         const bkuIncomeEl = document.getElementById('display-bku-income');
-        if(bkuIncomeEl) bkuIncomeEl.innerText = "Rp " + (data.total_income_bku || 0).toLocaleString('id-ID');
+        if(bkuIncomeEl) bkuIncomeEl.innerText = "Rp " + formatRupiahInput((data.total_income_bku || 0).toString());
         
         const bkuExpenseEl = document.getElementById('display-bku-expense');
-        if(bkuExpenseEl) bkuExpenseEl.innerText = "Rp " + (data.total_expense_bku || 0).toLocaleString('id-ID');
+        if(bkuExpenseEl) bkuExpenseEl.innerText = "Rp " + formatRupiahInput((data.total_expense_bku || 0).toString());
     }
 });
 
@@ -347,7 +388,8 @@ onSnapshot(doc(db, "metadata", "stats"), (ds) => {
 
 window.actionSaveSettings = async () => {
     if (!currentUser) return appDialog({title: 'Ditolak', message: 'Hanya Admin.', type: 'error'});
-    const newPrice = parseInt(document.getElementById('input-setting-price').value);
+    // [MENTOR NOTE] Wajib parseRupiahInt karena input adalah text berformat titik
+    const newPrice = parseRupiahInt(document.getElementById('input-setting-price').value);
     if(isNaN(newPrice) || newPrice <= 0) return appDialog({title: 'Peringatan', message: 'Harga tidak valid!', type: 'warning'});
     try {
         await updateDoc(doc(db, "metadata", "stats"), { shuttlecock_price: newPrice });
@@ -408,9 +450,9 @@ window.openMemberProfile = (id) => {
     document.getElementById('profile-name').innerText = m.name;
     document.getElementById('profile-balance').innerText = `${m.shuttlecock_balance} Kok`;
     
-    // Clear the Two-Way Input form
     document.getElementById('input-deposit-qty').value = "";
     document.getElementById('input-deposit-nominal').value = "";
+    document.getElementById('deposit-kembalian').innerText = "Rp 0";
     
     document.getElementById('modal-member-profile').classList.remove('hidden');
 };
@@ -440,11 +482,12 @@ window.closeGlobalDepositModal = () => {
     document.getElementById('modal-global-deposit').classList.add('hidden');
     document.getElementById('input-global-deposit-qty').value = "";
     document.getElementById('input-global-deposit-nominal').value = "";
+    document.getElementById('global-deposit-kembalian').innerText = "Rp 0";
     document.getElementById('select-global-deposit-member').value = "";
 };
 
 async function performDepositLogic(id, n, qty, modalCloseFn) {
-    const cost = qty * currentCockPrice; 
+    const cost = qty * currentCockPrice; // Database mutlak hanya menyimpan harga asli
     try {
         const b = writeBatch(db);
         const historyRef = doc(collection(db, "shuttlecock_history"));
@@ -465,7 +508,6 @@ async function performDepositLogic(id, n, qty, modalCloseFn) {
 window.actionSubmitGlobalDeposit = async () => {
     if (!currentUser) return;
     const md = document.getElementById('select-global-deposit-member').value;
-    // MENTOR NOTE: Diambil dari ID field Quantity, BUKAN nominal.
     const qty = parseInt(document.getElementById('input-global-deposit-qty').value);
     
     if(!md || isNaN(qty) || qty <= 0) return appDialog({title: 'Peringatan', message: 'Input jumlah kok tidak valid!', type: 'warning'});
@@ -477,7 +519,6 @@ window.actionSubmitDeposit = async () => {
     if (!currentUser) return;
     const id = document.getElementById('profile-member-id').value;
     const n = document.getElementById('profile-name').innerText;
-    // MENTOR NOTE: Diambil dari ID field Quantity.
     const qty = parseInt(document.getElementById('input-deposit-qty').value);
     
     if(!id || isNaN(qty) || qty <= 0) return appDialog({title: 'Peringatan', message: 'Input jumlah kok tidak valid!', type: 'warning'});
@@ -529,7 +570,6 @@ window.actionSubmitUsage = async () => {
 
 // [D] Manajemen KAS (BKU)
 window.openKasModal = () => {
-    // MENTOR NOTE: Menarik tanggal default ke kalender lokal client
     document.getElementById('input-income-date').valueAsDate = new Date();
     document.getElementById('input-expense-date').valueAsDate = new Date();
     document.getElementById('modal-kas').classList.remove('hidden');
@@ -564,10 +604,10 @@ window.switchKasTab = (type) => {
 
 window.actionSubmitIncome = async () => {
     if (!currentUser) return;
-    // MENTOR NOTE: Date Capture Added
     const dStr = document.getElementById('input-income-date').value;
     const c = document.getElementById('input-income-category').value;
-    const amt = parseInt(document.getElementById('input-income-amount').value);
+    // [MENTOR NOTE] ParseRupiahInt digunakan
+    const amt = parseRupiahInt(document.getElementById('input-income-amount').value);
     const n = document.getElementById('input-income-note').value;
     
     if(!dStr) return appDialog({title: 'Peringatan', message: 'Tanggal Wajib Diisi!', type: 'warning'});
@@ -592,10 +632,10 @@ window.actionSubmitIncome = async () => {
 
 window.actionSubmitExpense = async () => {
     if (!currentUser) return;
-    // MENTOR NOTE: Date Capture Added
     const dStr = document.getElementById('input-expense-date').value;
     const c = document.getElementById('input-expense-category').value;
-    const amt = parseInt(document.getElementById('input-expense-amount').value);
+    // [MENTOR NOTE] ParseRupiahInt digunakan
+    const amt = parseRupiahInt(document.getElementById('input-expense-amount').value);
     const n = document.getElementById('input-expense-note').value;
     
     if(!dStr) return appDialog({title: 'Peringatan', message: 'Tanggal Wajib Diisi!', type: 'warning'});
@@ -631,7 +671,6 @@ window.openEditTransaction = async (id, type) => {
         }
         document.getElementById('edit-target-id').value = id;
         document.getElementById('edit-target-type').value = type;
-        document.getElementById('edit-val-amount').value = Math.abs(d.amount);
         document.getElementById('edit-val-note').value = d.note || (d.type === 'DEPOSIT' ? "Deposit " + d.member_name : "");
         
         const label = document.getElementById('edit-label-amount');
@@ -640,12 +679,15 @@ window.openEditTransaction = async (id, type) => {
         const contextText = document.getElementById('edit-context-text');
         
         if(type === 'HISTORY') {
+            document.getElementById('edit-val-amount').value = Math.abs(d.amount); // Kok gak diformat
             label.innerText = "Jumlah Kok Baru";
             calcArea.classList.remove('hidden');
             contextBox.classList.remove('hidden');
             contextText.innerText = `👤 Member: ${d.member_name}`;
-            document.getElementById('edit-live-nominal').innerText = "Rp " + (Math.abs(d.amount) * currentCockPrice).toLocaleString('id-ID');
+            document.getElementById('edit-live-nominal').innerText = "Rp " + formatRupiahInput((Math.abs(d.amount) * currentCockPrice).toString());
         } else {
+            // [MENTOR NOTE] Tampilkan format titik untuk BKU
+            document.getElementById('edit-val-amount').value = formatRupiahInput(Math.abs(d.amount).toString());
             label.innerText = "Nominal Rupiah Baru";
             calcArea.classList.add('hidden');
             contextBox.classList.remove('hidden');
@@ -658,8 +700,12 @@ window.openEditTransaction = async (id, type) => {
 const elEditValAmount = document.getElementById('edit-val-amount');
 if(elEditValAmount) {
     elEditValAmount.oninput = (e) => {
-        if(document.getElementById('edit-target-type').value === 'HISTORY') {
-            document.getElementById('edit-live-nominal').innerText = "Rp " + ((parseInt(e.target.value)||0) * currentCockPrice).toLocaleString('id-ID');
+        const type = document.getElementById('edit-target-type').value;
+        if(type === 'HISTORY') {
+            const qty = parseRupiahInt(e.target.value);
+            document.getElementById('edit-live-nominal').innerText = "Rp " + formatRupiahInput((qty * currentCockPrice).toString());
+        } else {
+            e.target.value = formatRupiahInput(e.target.value);
         }
     };
 }
@@ -668,7 +714,8 @@ window.processUpdateTransaction = async () => {
     if (!currentUser) return;
     const id = document.getElementById('edit-target-id').value;
     const type = document.getElementById('edit-target-type').value;
-    const nA = parseInt(document.getElementById('edit-val-amount').value);
+    // [MENTOR NOTE] Wajib parseRupiahInt
+    const nA = parseRupiahInt(document.getElementById('edit-val-amount').value);
     const nN = document.getElementById('edit-val-note').value;
     
     if(isNaN(nA)) return;
@@ -772,6 +819,7 @@ window.adminDeleteBKU = async (id) => {
 // 5. INISIALISASI
 // ==========================================
 document.addEventListener('DOMContentLoaded', () => {
-    bindDepositInputs('input-deposit-qty', 'input-deposit-nominal');
-    bindDepositInputs('input-global-deposit-qty', 'input-global-deposit-nominal');
+    setupRupiahFormatter();
+    bindDepositInputs('input-deposit-qty', 'input-deposit-nominal', 'deposit-kembalian');
+    bindDepositInputs('input-global-deposit-qty', 'input-global-deposit-nominal', 'global-deposit-kembalian');
 });
