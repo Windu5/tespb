@@ -390,6 +390,24 @@
         </div>
     </div>
 
+    <!-- Unified Custom Dialog Modal (Modern Popup) -->
+    <div id="custom-dialog" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-[200] opacity-0 transition-opacity duration-300">
+        <div class="bg-white w-full max-w-sm rounded-[32px] p-8 shadow-2xl transform scale-95 transition-transform duration-300" id="custom-dialog-box">
+            <div id="dialog-icon-container" class="mx-auto w-16 h-16 rounded-full flex items-center justify-center mb-4 transition-colors duration-300">
+                <svg id="dialog-icon" class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"></svg>
+            </div>
+            <h3 id="dialog-title" class="text-xl font-bold text-center text-slate-800 mb-2 tracking-tight">Title</h3>
+            <p id="dialog-message" class="text-sm text-slate-500 text-center mb-6 leading-relaxed">Message</p>
+            <div id="dialog-input-container" class="hidden mb-6">
+                <input type="text" id="dialog-input" class="w-full bg-slate-50 p-4 rounded-2xl border-none text-sm focus:ring-2 focus:ring-emerald-500 font-bold text-center text-slate-700" autocomplete="off">
+            </div>
+            <div id="dialog-buttons" class="flex gap-3">
+                <button id="btn-dialog-cancel" class="hidden flex-1 py-3.5 bg-slate-100 text-slate-600 rounded-2xl font-bold text-xs uppercase tracking-widest active:scale-95 transition hover:bg-slate-200">Batal</button>
+                <button id="btn-dialog-confirm" class="flex-1 py-3.5 text-white rounded-2xl font-bold text-xs uppercase tracking-widest shadow-lg active:scale-95 transition">OK</button>
+            </div>
+        </div>
+    </div>
+
     <!-- PANGGILAN FILE JAVASCRIPT MODULE EKSTERNAL (Lokal) -->
     <script type="module" src="app.js"></script>
 </body>

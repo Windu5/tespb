@@ -38,6 +38,85 @@ let allMembers = [];
 let currentCockPrice = 3000;
 
 // ==========================================
+// [MENTOR NOTE] CORE SYSTEM: ASYNC CUSTOM DIALOG
+// Dibuat sebagai Promise untuk menggantikan alert(), confirm(), prompt()
+// ==========================================
+window.appDialog = function(options) {
+    return new Promise((resolve) => {
+        const modal = document.getElementById('custom-dialog');
+        const box = document.getElementById('custom-dialog-box');
+        const iconContainer = document.getElementById('dialog-icon-container');
+        const icon = document.getElementById('dialog-icon');
+        const title = document.getElementById('dialog-title');
+        const message = document.getElementById('dialog-message');
+        const inputContainer = document.getElementById('dialog-input-container');
+        const input = document.getElementById('dialog-input');
+        const btnCancel = document.getElementById('btn-dialog-cancel');
+        const btnConfirm = document.getElementById('btn-dialog-confirm');
+
+        if(!modal) return resolve(options.type === 'confirm' ? confirm(options.message) : (options.type === 'prompt' ? prompt(options.message) : alert(options.message)));
+
+        // Reset state
+        inputContainer.classList.add('hidden');
+        btnCancel.classList.add('hidden');
+        input.value = options.inputValue || '';
+        title.innerText = options.title || 'Informasi';
+        message.innerText = options.message || '';
+
+        // Tema UI berdasarkan tipe
+        let colorClass = 'bg-blue-100 text-blue-600';
+        let svgPath = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />';
+        btnConfirm.className = 'flex-1 py-3.5 text-white rounded-2xl font-bold text-xs uppercase tracking-widest shadow-lg active:scale-95 transition bg-blue-600 shadow-blue-200';
+
+        if (options.type === 'error') {
+            colorClass = 'bg-rose-100 text-rose-600';
+            btnConfirm.classList.replace('bg-blue-600', 'bg-rose-600');
+            btnConfirm.classList.replace('shadow-blue-200', 'shadow-rose-200');
+            svgPath = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />';
+        } else if (options.type === 'success') {
+            colorClass = 'bg-emerald-100 text-emerald-600';
+            btnConfirm.classList.replace('bg-blue-600', 'bg-emerald-600');
+            btnConfirm.classList.replace('shadow-blue-200', 'shadow-emerald-200');
+            svgPath = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />';
+        } else if (options.type === 'warning' || options.type === 'confirm') {
+            colorClass = 'bg-amber-100 text-amber-600';
+            btnConfirm.classList.replace('bg-blue-600', 'bg-amber-500');
+            btnConfirm.classList.replace('shadow-blue-200', 'shadow-amber-200');
+            svgPath = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />';
+            if (options.type === 'confirm') btnCancel.classList.remove('hidden');
+        }
+
+        if (options.type === 'prompt') {
+            inputContainer.classList.remove('hidden');
+            btnCancel.classList.remove('hidden');
+            setTimeout(() => input.focus(), 300);
+        }
+
+        iconContainer.className = `mx-auto w-16 h-16 rounded-full flex items-center justify-center mb-4 ${colorClass}`;
+        icon.innerHTML = svgPath;
+
+        // Animate in
+        modal.classList.remove('hidden');
+        setTimeout(() => {
+            modal.classList.replace('opacity-0', 'opacity-100');
+            box.classList.replace('scale-95', 'scale-100');
+        }, 10);
+
+        const close = (result) => {
+            modal.classList.replace('opacity-100', 'opacity-0');
+            box.classList.replace('scale-100', 'scale-95');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                resolve(result);
+            }, 300);
+        };
+
+        btnConfirm.onclick = () => close(options.type === 'prompt' ? input.value : true);
+        btnCancel.onclick = () => close(options.type === 'prompt' ? null : false);
+    });
+};
+
+// ==========================================
 // 1. UI & NAVIGASI GLOBAL
 // ==========================================
 
@@ -62,9 +141,10 @@ if(btnDoLogin) {
         try {
             await signInWithEmailAndPassword(auth, e, p);
             closeLogin();
+            appDialog({title: 'Berhasil', message: 'Anda telah masuk ke sistem.', type: 'success'});
         } catch (err) {
             console.error("Login gagal:", err);
-            alert("Sandi/Email Salah!");
+            appDialog({title: 'Akses Ditolak', message: 'Sandi atau Email salah!', type: 'error'});
         }
     };
 }
@@ -250,16 +330,16 @@ onSnapshot(doc(db, "metadata", "stats"), (ds) => {
 // ==========================================
 
 window.actionSaveSettings = async () => {
-    if (!currentUser) return alert("Akses Ditolak!");
+    if (!currentUser) return appDialog({title: 'Ditolak', message: 'Akses Ditolak! Hanya Admin.', type: 'error'});
     const newPrice = parseInt(document.getElementById('input-setting-price').value);
-    if(isNaN(newPrice) || newPrice <= 0) return alert("Harga tidak valid!");
+    if(isNaN(newPrice) || newPrice <= 0) return appDialog({title: 'Peringatan', message: 'Harga tidak valid!', type: 'warning'});
     
     try {
         await updateDoc(doc(db, "metadata", "stats"), { shuttlecock_price: newPrice });
-        alert("Harga berhasil diperbarui!");
+        appDialog({title: 'Sukses', message: 'Harga kok berhasil diperbarui!', type: 'success'});
     } catch (e) {
         console.error("Gagal simpan setting:", e);
-        alert(e.message);
+        appDialog({title: 'Error', message: e.message, type: 'error'});
     }
 };
 
@@ -297,7 +377,7 @@ window.closeAddMemberModal = () => {
 };
 
 window.actionAddMember = async () => {
-    if (!currentUser) return alert("Akses Ditolak!");
+    if (!currentUser) return appDialog({title: 'Ditolak', message: 'Akses Ditolak! Hanya Admin.', type: 'error'});
     const i = document.getElementById('input-new-member'); 
     if(!i.value) return;
     try {
@@ -308,10 +388,10 @@ window.actionAddMember = async () => {
         });
         closeAddMemberModal();
         showTab('tab-members', document.querySelectorAll('.nav-btn')[0]);
-        alert("Anggota Berhasil Ditambahkan!");
+        appDialog({title: 'Sukses', message: 'Anggota Berhasil Ditambahkan!', type: 'success'});
     } catch (e) {
         console.error("Gagal tambah anggota:", e);
-        alert(e.message);
+        appDialog({title: 'Error', message: e.message, type: 'error'});
     }
 };
 
@@ -335,15 +415,16 @@ window.triggerEditName = () => {
 };
 
 window.adminEditMemberName = async (id, old) => {
-    if (!currentUser) return alert("Akses Ditolak!");
-    const n = prompt("Ubah nama anggota:", old);
+    if (!currentUser) return appDialog({title: 'Ditolak', message: 'Akses Ditolak! Hanya Admin.', type: 'error'});
+    const n = await appDialog({title: 'Ubah Nama', message: 'Masukkan nama anggota baru:', type: 'prompt', inputValue: old});
     if(n && n !== old) {
         try {
             await updateDoc(doc(db, "members", id), { name: n.toUpperCase() });
             document.getElementById('profile-name').innerText = n.toUpperCase();
+            appDialog({title: 'Berhasil', message: 'Nama anggota diperbarui.', type: 'success'});
         } catch (e) {
             console.error("Gagal edit nama:", e);
-            alert(e.message);
+            appDialog({title: 'Error', message: e.message, type: 'error'});
         }
     }
 };
@@ -386,30 +467,30 @@ async function performDepositLogic(id, n, amt, modalCloseFn) {
         await b.commit(); 
         modalCloseFn();
         showTab('tab-members', document.querySelectorAll('.nav-btn')[0]);
-        alert("Deposit Berhasil!"); 
+        appDialog({title: 'Berhasil', message: 'Deposit kok tercatat secara sistem!', type: 'success'}); 
     } catch (e) {
         console.error("Gagal deposit:", e);
-        alert(e.message);
+        appDialog({title: 'Error', message: e.message, type: 'error'});
     }
 }
 
 window.actionSubmitGlobalDeposit = async () => {
-    if (!currentUser) return alert("Akses Ditolak!");
+    if (!currentUser) return appDialog({title: 'Ditolak', message: 'Akses Ditolak!', type: 'error'});
     const md = document.getElementById('select-global-deposit-member').value;
     const amt = parseInt(document.getElementById('input-global-deposit-amount').value);
     
-    if(!md || isNaN(amt) || amt <= 0) return alert("Input tidak valid!");
+    if(!md || isNaN(amt) || amt <= 0) return appDialog({title: 'Peringatan', message: 'Input tidak valid!', type: 'warning'});
     const [id, n] = md.split('|'); 
     await performDepositLogic(id, n, amt, closeGlobalDepositModal);
 };
 
 window.actionSubmitDeposit = async () => {
-    if (!currentUser) return alert("Akses Ditolak!");
+    if (!currentUser) return appDialog({title: 'Ditolak', message: 'Akses Ditolak!', type: 'error'});
     const id = document.getElementById('profile-member-id').value;
     const n = document.getElementById('profile-name').innerText;
     const amt = parseInt(document.getElementById('input-deposit-amount').value);
     
-    if(!id || isNaN(amt) || amt <= 0) return alert("Input nominal kok tidak valid!");
+    if(!id || isNaN(amt) || amt <= 0) return appDialog({title: 'Peringatan', message: 'Input nominal kok tidak valid!', type: 'warning'});
     await performDepositLogic(id, n, amt, closeMemberProfile);
 };
 
@@ -431,16 +512,21 @@ window.closeUsageModal = () => {
 };
 
 window.actionSubmitUsage = async () => {
-    if (!currentUser) return alert("Akses Ditolak!");
+    if (!currentUser) return appDialog({title: 'Ditolak', message: 'Akses Ditolak!', type: 'error'});
     
     const sel = Array.from(document.querySelectorAll('input[name="usage-member"]:checked'));
     const amt = parseInt(document.getElementById('input-usage-amount').value);
     const dv = document.getElementById('input-usage-date').value;
     
-    if(!sel.length || isNaN(amt) || !dv) return alert("Pilih pemain dan lengkapi data!");
+    if(!sel.length || isNaN(amt) || !dv) return appDialog({title: 'Peringatan', message: 'Pilih pemain dan lengkapi data!', type: 'warning'});
     try {
         const b = writeBatch(db); 
-        const td = new Date(dv); td.setHours(12,0,0,0);
+        
+        // [MENTOR NOTE] Logika perbaikan waktu: 
+        // Tangkap tanggal dari input, lalu sinkronkan Jam/Menit/Detik dengan waktu Realtime saat ini.
+        const td = new Date(dv); 
+        const now = new Date();
+        td.setHours(now.getHours(), now.getMinutes(), now.getSeconds(), 0);
         
         sel.forEach(el => {
             const [id, n] = el.value.split('|');
@@ -459,10 +545,10 @@ window.actionSubmitUsage = async () => {
         sel.forEach(c => c.checked = false);
         closeUsageModal();
         showTab('tab-history', document.querySelectorAll('.nav-btn')[1]);
-        alert("Data Pemakaian Tersimpan!"); 
+        appDialog({title: 'Berhasil', message: 'Data Pemakaian Tersimpan!', type: 'success'}); 
     } catch (e) {
         console.error("Gagal catat pemakaian:", e);
-        alert(e.message);
+        appDialog({title: 'Error', message: e.message, type: 'error'});
     }
 };
 
@@ -497,13 +583,13 @@ window.switchKasTab = (type) => {
 };
 
 window.actionSubmitIncome = async () => {
-    if (!currentUser) return alert("Akses Ditolak!");
+    if (!currentUser) return appDialog({title: 'Ditolak', message: 'Akses Ditolak!', type: 'error'});
     const c = document.getElementById('input-income-category').value;
     const amt = parseInt(document.getElementById('input-income-amount').value);
     const n = document.getElementById('input-income-note').value;
     
-    if (isNaN(amt) || amt <= 0) return alert("Nominal tidak valid!");
-    if (!n || n.trim() === "") return alert("Keterangan wajib diisi untuk melacak asal uang!");
+    if (isNaN(amt) || amt <= 0) return appDialog({title: 'Peringatan', message: 'Nominal tidak valid!', type: 'warning'});
+    if (!n || n.trim() === "") return appDialog({title: 'Peringatan', message: 'Keterangan wajib diisi!', type: 'warning'});
     
     try {
         const b = writeBatch(db);
@@ -517,20 +603,20 @@ window.actionSubmitIncome = async () => {
         await b.commit();
         closeKasModal();
         showTab('tab-bku', document.querySelectorAll('.nav-btn')[2]);
-        alert("Pemasukan Kas Berhasil Dicatat!");
+        appDialog({title: 'Berhasil', message: 'Pemasukan Kas Dicatat!', type: 'success'});
     } catch (e) { 
         console.error("Gagal mencatat pemasukan", e);
-        alert(e.message); 
+        appDialog({title: 'Error', message: e.message, type: 'error'}); 
     }
 };
 
 window.actionSubmitExpense = async () => {
-    if (!currentUser) return alert("Akses Ditolak!");
+    if (!currentUser) return appDialog({title: 'Ditolak', message: 'Akses Ditolak!', type: 'error'});
     const c = document.getElementById('input-expense-category').value;
     const amt = parseInt(document.getElementById('input-expense-amount').value);
     const n = document.getElementById('input-expense-note').value;
     
-    if(isNaN(amt) || amt <= 0) return alert("Cek nominal!");
+    if(isNaN(amt) || amt <= 0) return appDialog({title: 'Peringatan', message: 'Cek nominal uang!', type: 'warning'});
     try {
         const b = writeBatch(db);
         b.set(doc(collection(db, "bku_transactions")), { 
@@ -543,10 +629,10 @@ window.actionSubmitExpense = async () => {
         await b.commit(); 
         closeKasModal();
         showTab('tab-bku', document.querySelectorAll('.nav-btn')[2]);
-        alert("Pengeluaran Berhasil!"); 
+        appDialog({title: 'Berhasil', message: 'Pengeluaran Berhasil!', type: 'success'}); 
     } catch(e) { 
         console.error("Gagal input pengeluaran", e);
-        alert(e.message); 
+        appDialog({title: 'Error', message: e.message, type: 'error'}); 
     }
 };
 
@@ -564,7 +650,7 @@ window.openEditTransaction = async (id, type) => {
         
         const d = s.data();
         if (type === 'BKU' && d.linked_history_id) {
-            alert("⚠️ PROTEKSI SISTEM: Akses Ditolak!\n\nIni adalah transaksi Deposit Kok. Untuk menghindari desync antara jumlah Kok dan nilai Kas (Rupiah), silakan Edit transaksi ini melalui Tab LOG KOK.");
+            appDialog({title: '⚠️ Proteksi Sistem', message: 'Akses Ditolak!\nIni adalah transaksi Deposit Kok. Silakan Edit transaksi ini melalui Tab LOG KOK.', type: 'error'});
             return;
         }
         document.getElementById('edit-target-id').value = id;
@@ -612,7 +698,7 @@ if(elEditValAmount) {
 
 // [MENTOR NOTE: PATCH DESYNC UPDATED]
 window.processUpdateTransaction = async () => {
-    if (!currentUser) return alert("Akses Ditolak!");
+    if (!currentUser) return appDialog({title: 'Ditolak', message: 'Akses Ditolak!', type: 'error'});
     const id = document.getElementById('edit-target-id').value;
     const type = document.getElementById('edit-target-type').value;
     const nA = parseInt(document.getElementById('edit-val-amount').value);
@@ -623,7 +709,7 @@ window.processUpdateTransaction = async () => {
     try {
         const col = type === 'HISTORY' ? 'shuttlecock_history' : 'bku_transactions';
         const s = await getDoc(doc(db, col, id)); 
-        if(!s.exists()) return alert("Data sudah tidak ada!");
+        if(!s.exists()) return appDialog({title: 'Error', message: 'Data sudah tidak ada!', type: 'error'});
         const d = s.data();
         
         const b = writeBatch(db);
@@ -663,17 +749,20 @@ window.processUpdateTransaction = async () => {
         }
         await b.commit();
         closeEditModal();
-        alert("Update Berhasil secara menyeluruh!");
+        appDialog({title: 'Berhasil', message: 'Update berhasil secara menyeluruh!', type: 'success'});
     } catch (e) { 
         console.error("Gagal update:", e);
-        alert(e.message); 
+        appDialog({title: 'Error', message: e.message, type: 'error'}); 
     }
 };
 
 // [MENTOR NOTE: PATCH DESYNC DELETE]
 window.adminDeleteShuttlecock = async (id, type) => {
-    if (!currentUser) return alert("Akses Ditolak!");
-    if(!confirm("Hapus? Saldo akan dibalikkan.")) return;
+    if (!currentUser) return appDialog({title: 'Ditolak', message: 'Akses Ditolak!', type: 'error'});
+    
+    // Ganti native confirm dengan Custom Dialog
+    const confirmed = await appDialog({title: 'Konfirmasi Hapus', message: 'Hapus data log ini? Saldo anggota (dan kas jika deposit) akan dibalikkan.', type: 'confirm'});
+    if(!confirmed) return;
     
     try {
         const s = await getDoc(doc(db, "shuttlecock_history", id)); 
@@ -698,14 +787,15 @@ window.adminDeleteShuttlecock = async (id, type) => {
         }
         b.delete(doc(db, "shuttlecock_history", id)); 
         await b.commit();
+        appDialog({title: 'Terhapus', message: 'Log berhasil dihapus!', type: 'success'});
     } catch (e) { 
         console.error("Gagal delete:", e);
-        alert(e.message); 
+        appDialog({title: 'Error', message: e.message, type: 'error'}); 
     }
 };
 
 window.adminDeleteBKU = async (id) => {
-    if (!currentUser) return alert("Akses Ditolak!");
+    if (!currentUser) return appDialog({title: 'Ditolak', message: 'Akses Ditolak!', type: 'error'});
     
     try {
         const s = await getDoc(doc(db, "bku_transactions", id)); 
@@ -713,11 +803,12 @@ window.adminDeleteBKU = async (id) => {
         const d = s.data();
         
         if (d.linked_history_id) {
-            alert("⚠️ PROTEKSI SISTEM: Akses Ditolak!\n\nIni adalah transaksi Deposit Kok. Silakan Hapus transaksi ini melalui Tab LOG KOK agar saldo Kok Member juga ikut disesuaikan secara otomatis.");
+            appDialog({title: '⚠️ Proteksi Sistem', message: 'Akses Ditolak!\nIni adalah deposit. Silakan Hapus transaksi ini melalui Tab LOG KOK agar saldo Kok Member ikut disesuaikan otomatis.', type: 'error'});
             return;
         }
         
-        if(!confirm("Hapus kas? Saldo akan disesuaikan.")) return;
+        const confirmed = await appDialog({title: 'Konfirmasi Hapus', message: 'Hapus data kas ini? Saldo BKU akan disesuaikan kembali.', type: 'confirm'});
+        if(!confirmed) return;
         
         const b = writeBatch(db);
         if (d.type === 'DEBIT') {
@@ -727,8 +818,9 @@ window.adminDeleteBKU = async (id) => {
         }
         b.delete(doc(db, "bku_transactions", id)); 
         await b.commit();
+        appDialog({title: 'Terhapus', message: 'Data kas berhasil dihapus!', type: 'success'});
     } catch (e) { 
         console.error("Gagal hapus kas:", e);
-        alert(e.message); 
+        appDialog({title: 'Error', message: e.message, type: 'error'}); 
     }
 };
