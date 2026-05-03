@@ -97,7 +97,6 @@
                     <div class="space-y-3">
                         <div>
                             <label class="text-[10px] font-bold text-slate-400 uppercase ml-2">Harga Kok / Bh (Rp)</label>
-                            <!-- [MENTOR NOTE] Tipe diubah ke text inputmode numeric -->
                             <input type="text" inputmode="numeric" id="input-setting-price" placeholder="Misal: 3.000" class="w-full bg-slate-50 p-4 rounded-2xl border-none text-sm font-bold focus:ring-2 focus:ring-purple-500 mt-1">
                         </div>
                         <button onclick="actionSaveSettings()" class="w-full bg-purple-600 text-white py-4 rounded-2xl font-bold active:scale-95 transition uppercase text-xs tracking-widest shadow-lg shadow-purple-100 mt-2">Simpan Pengaturan</button>
@@ -114,12 +113,10 @@
 
     <!-- Bottom Navigation -->
     <nav class="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t border-slate-100 px-2 pt-2 pb-4 flex justify-around items-end z-50">
-        
         <button onclick="showTab('tab-members', this)" class="nav-btn flex flex-col items-center gap-1 bottom-nav-active transition active:scale-90 w-16">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
             <span class="text-[9px] font-black uppercase tracking-tighter">ANGGOTA</span>
         </button>
-        
         <button onclick="showTab('tab-history', this)" class="nav-btn flex flex-col items-center gap-1 text-slate-400 transition active:scale-90 w-16">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
             <span class="text-[9px] font-black uppercase tracking-tighter">Log</span>
@@ -162,7 +159,6 @@
             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
             <span class="text-[9px] font-black uppercase tracking-tighter">Kas</span>
         </button>
-        
         <button onclick="showTab('tab-settings', this)" class="nav-btn flex flex-col items-center gap-1 text-slate-400 transition active:scale-90 admin-only w-16">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
             <span class="text-[9px] font-black uppercase tracking-tighter">Setting</span>
@@ -177,7 +173,7 @@
         <div class="bg-white w-full max-w-md rounded-[32px] p-8 animate-slide-up shadow-2xl relative"><h2 class="text-xl font-bold mb-1 uppercase tracking-tight text-slate-800 text-center">Anggota Baru</h2><p class="text-slate-400 text-[10px] mb-6 font-bold uppercase tracking-widest italic text-center">Pendaftaran Anggota Klub</p><div class="space-y-4 mb-4"><input type="text" id="input-new-member" placeholder="Nama Lengkap Anggota" class="w-full bg-slate-50 p-4 rounded-2xl border-none text-sm font-bold focus:ring-2 focus:ring-slate-800"><button onclick="actionAddMember()" class="w-full bg-slate-800 text-white py-4 rounded-2xl font-bold active:scale-95 transition shadow-lg shadow-slate-200 uppercase text-xs tracking-widest">Simpan Anggota</button><button onclick="closeAddMemberModal()" class="w-full py-2 text-slate-400 font-bold text-xs uppercase tracking-widest">Batal</button></div></div>
     </div>
 
-    <!-- MODAL 2: Unified Profil Modal (Deposit 2 Input + Kembalian) -->
+    <!-- MODAL 2: Unified Profil Modal (Deposit + Checkbox Kembalian) -->
     <div id="modal-member-profile" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[110]">
         <div class="bg-white w-full max-w-md rounded-[32px] p-8 animate-slide-up shadow-2xl relative">
             <div class="flex justify-between items-start mb-6">
@@ -194,21 +190,27 @@
                 </div>
             </div>
 
-            <!-- Area Input Deposit Two-Way dengan Format Titik -->
+            <!-- Area Input Deposit Two-Way -->
             <div class="p-4 bg-emerald-50 rounded-3xl mb-6 border border-emerald-100">
                 <h3 class="text-[10px] font-black text-emerald-700 uppercase tracking-widest mb-3 ml-2">Tambah Deposit Kok</h3>
                 <input type="hidden" id="profile-member-id">
                 
-                <div class="flex gap-2 mb-2">
+                <div class="flex gap-2 mb-3">
                     <input type="number" id="input-deposit-qty" placeholder="Jml Kok" class="w-1/3 bg-white p-4 rounded-2xl border-none text-sm font-bold focus:ring-2 focus:ring-emerald-500 text-center text-emerald-700 shadow-sm">
-                    <!-- [MENTOR NOTE] Tipe diubah ke text agar bisa menampung titik ribuan -->
-                    <input type="text" inputmode="numeric" id="input-deposit-nominal" placeholder="Nominal (Rp)" class="w-2/3 bg-white p-4 rounded-2xl border-none text-sm font-bold focus:ring-2 focus:ring-emerald-500 text-slate-700 shadow-sm">
+                    <input type="text" inputmode="numeric" id="input-deposit-nominal" placeholder="Nominal Bayar (Rp)" class="w-2/3 bg-white p-4 rounded-2xl border-none text-sm font-bold focus:ring-2 focus:ring-emerald-500 text-slate-700 shadow-sm">
                 </div>
                 
-                <!-- Display Kembalian -->
-                <div class="flex justify-between items-center px-2 py-1 mb-3 bg-white/50 rounded-lg">
-                    <span class="text-[10px] font-bold text-slate-500 uppercase">Sisa Uang (Kembalian):</span>
-                    <span id="deposit-kembalian" class="font-black text-rose-500 text-xs">Rp 0</span>
+                <!-- Display Kembalian & Checkbox Donasi -->
+                <div class="flex flex-col gap-2 px-3 py-2.5 mb-3 bg-white/50 rounded-xl border border-slate-100">
+                    <div class="flex justify-between items-center">
+                        <span class="text-[10px] font-bold text-slate-500 uppercase">Sisa Uang (Kembalian):</span>
+                        <span id="deposit-kembalian" class="font-black text-rose-500 text-xs">Rp 0</span>
+                    </div>
+                    <!-- MENTOR NOTE: Checkbox Donasi Ditambahkan -->
+                    <label class="flex items-center gap-2 cursor-pointer group mt-1 pt-2 border-t border-emerald-100/50">
+                        <input type="checkbox" id="check-donate-deposit" class="w-4 h-4 text-emerald-600 bg-white border-slate-300 rounded focus:ring-emerald-500">
+                        <span class="text-[9px] font-bold text-slate-500 group-hover:text-emerald-700 transition uppercase tracking-widest leading-tight">Sisa kembalian masuk sebagai KAS (Donasi)</span>
+                    </label>
                 </div>
                 
                 <button onclick="actionSubmitDeposit()" class="w-full bg-emerald-600 text-white py-3.5 rounded-2xl font-bold active:scale-95 transition shadow-lg shadow-emerald-200 uppercase text-xs tracking-widest">Proses Deposit</button>
@@ -218,7 +220,7 @@
         </div>
     </div>
 
-    <!-- MODAL 3: Global Deposit Kok (Bypass 2 Input + Kembalian) -->
+    <!-- MODAL 3: Global Deposit Kok (Bypass + Checkbox Kembalian) -->
     <div id="modal-global-deposit" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[110]">
         <div class="bg-white w-full max-w-md rounded-[32px] p-8 animate-slide-up shadow-2xl relative">
             <h2 class="text-xl font-bold mb-1 uppercase tracking-tight text-emerald-800 text-center">Deposit Kok</h2>
@@ -228,13 +230,19 @@
                 
                 <div class="flex gap-2">
                     <input type="number" id="input-global-deposit-qty" placeholder="Jml Kok" class="w-1/3 bg-slate-50 p-4 rounded-2xl border-none text-sm font-bold focus:ring-2 focus:ring-emerald-500 text-center text-emerald-700">
-                    <!-- [MENTOR NOTE] Tipe text inputmode numeric -->
                     <input type="text" inputmode="numeric" id="input-global-deposit-nominal" placeholder="Nominal Bayar (Rp)" class="w-2/3 bg-slate-50 p-4 rounded-2xl border-none text-sm font-bold focus:ring-2 focus:ring-emerald-500 text-slate-700">
                 </div>
 
-                <div class="flex justify-between items-center px-2 py-1 bg-slate-50 rounded-lg">
-                    <span class="text-[10px] font-bold text-slate-500 uppercase">Sisa Uang (Kembalian):</span>
-                    <span id="global-deposit-kembalian" class="font-black text-rose-500 text-xs">Rp 0</span>
+                <div class="flex flex-col gap-2 px-3 py-2.5 bg-slate-50 rounded-xl border border-slate-200/50">
+                    <div class="flex justify-between items-center">
+                        <span class="text-[10px] font-bold text-slate-500 uppercase">Sisa Uang (Kembalian):</span>
+                        <span id="global-deposit-kembalian" class="font-black text-rose-500 text-xs">Rp 0</span>
+                    </div>
+                    <!-- MENTOR NOTE: Checkbox Donasi Ditambahkan -->
+                    <label class="flex items-center gap-2 cursor-pointer group mt-1 pt-2 border-t border-slate-200">
+                        <input type="checkbox" id="check-donate-global-deposit" class="w-4 h-4 text-emerald-600 bg-white border-slate-300 rounded focus:ring-emerald-500">
+                        <span class="text-[9px] font-bold text-slate-500 group-hover:text-emerald-700 transition uppercase tracking-widest leading-tight">Sisa kembalian masuk sebagai KAS (Donasi)</span>
+                    </label>
                 </div>
 
                 <button onclick="actionSubmitGlobalDeposit()" class="w-full bg-emerald-600 text-white py-4 rounded-2xl font-bold active:scale-95 transition shadow-lg shadow-emerald-100 uppercase text-xs tracking-widest mt-2">Proses Deposit</button>
@@ -288,7 +296,6 @@
                     <option value="SPONSOR">SPONSOR</option>
                     <option value="LAINNYA">LAIN-LAIN</option>
                 </select>
-                <!-- [MENTOR NOTE] Tipe text inputmode numeric -->
                 <input type="text" inputmode="numeric" id="input-income-amount" placeholder="Nominal (Rp)" class="w-full bg-slate-50 p-4 rounded-2xl border-none text-sm font-bold focus:ring-2 focus:ring-blue-500">
                 <input type="text" id="input-income-note" placeholder="Nama Donatur / Sumber (Wajib)" class="w-full bg-slate-50 p-4 rounded-2xl border-none text-sm focus:ring-2 focus:ring-blue-500">
                 <button onclick="actionSubmitIncome()" class="w-full bg-blue-600 text-white py-4 rounded-2xl font-bold active:scale-95 transition uppercase text-xs tracking-widest shadow-lg shadow-blue-100">Catat Pemasukan</button>
@@ -303,7 +310,6 @@
                     <option value="MAINTENANCE">LAMPU / PERBAIKAN</option>
                     <option value="LAINNYA">LAIN-LAIN</option>
                 </select>
-                <!-- [MENTOR NOTE] Tipe text inputmode numeric -->
                 <input type="text" inputmode="numeric" id="input-expense-amount" placeholder="Nominal (Rp)" class="w-full bg-slate-50 p-4 rounded-2xl border-none text-sm font-bold focus:ring-2 focus:ring-rose-500">
                 <input type="text" id="input-expense-note" placeholder="Keterangan Pengeluaran" class="w-full bg-slate-50 p-4 rounded-2xl border-none text-sm focus:ring-2 focus:ring-rose-500">
                 <button onclick="actionSubmitExpense()" class="w-full bg-rose-600 text-white py-4 rounded-2xl font-bold active:scale-95 transition uppercase text-xs tracking-widest shadow-lg shadow-rose-100">Catat Pengeluaran</button>
@@ -323,7 +329,6 @@
             <div class="space-y-4 mb-8">
                 <div>
                     <label id="edit-label-amount" class="text-[10px] font-black text-slate-400 uppercase mb-1 block ml-2">Nilai Baru</label>
-                    <!-- [MENTOR NOTE] Tipe text inputmode numeric -->
                     <input type="text" inputmode="numeric" id="edit-val-amount" class="w-full bg-slate-50 p-4 rounded-2xl border-none font-bold text-emerald-700 focus:ring-2 focus:ring-emerald-500">
                     <div id="edit-calc-display" class="mt-2 ml-2 flex justify-between items-center"><span class="text-[10px] font-bold text-slate-400 uppercase">Estimasi Nominal:</span><span id="edit-live-nominal" class="text-xs font-black text-emerald-600">Rp 0</span></div>
                 </div>
