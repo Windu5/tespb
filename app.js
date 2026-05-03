@@ -2,15 +2,15 @@
 =========================================================
 PB. BATU BETULIS - CORE APPLICATION LOGIC
 [MENTOR NOTE]
-1. Logika 'Two-Way Binding' telah dipasang cerdas (bisa menghitung dan menampilkan kembalian fisik).
-2. Jika Checkbox Donasi dicentang, Firebase Batch Write akan menembakkan DUA record BKU sekaligus tanpa mengotori Harga Dasar Kok.
-3. UI Render BKU telah diperbaiki: Tombol admin sejajar dengan tanggal, teks note dibebaskan agar bisa wrap (turun baris).
+1. Semua fitur Pagination (Load More) terhubung penuh.
+2. Fitur 'Tutup Buku' (Rollover) siap tereksekusi dengan Chunked Delete asinkron.
+3. Donasi dari sisa uang deposit bekerja sebagai penambah saldo KAS otomatis.
 =========================================================
 */
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-import { getFirestore, doc, setDoc, deleteDoc, getDoc, updateDoc, collection, query, orderBy, limit, onSnapshot, writeBatch, serverTimestamp, increment } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getFirestore, doc, setDoc, deleteDoc, getDoc, updateDoc, collection, query, orderBy, limit, onSnapshot, writeBatch, serverTimestamp, increment, getDocs, startAfter } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyCnHKhINwZgnon4O0WPfdiYpb9tK118jTY",
@@ -34,6 +34,13 @@ try {
 let currentUser = null;
 let allMembers = [];
 let currentCockPrice = 3000;
+
+// Pagination State
+let historyData = [];
+let bkuData = [];
+let lastVisibleHistory = null;
+let lastVisibleBKU = null;
+const FETCH_LIMIT = 15;
 
 // ==========================================
 // 1. HELPER FUNCTIONS & FORMATTERS
@@ -66,7 +73,13 @@ function processRealtimeDate(dateString) {
     return d;
 }
 
-// Sistem Two-Way Binding Deposit DENGAN FITUR KEMBALIAN
+function getMonthYearStr(dateString) {
+    const d = dateString ? new Date(dateString) : new Date();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const y = d.getFullYear();
+    return `${m}-${y}`; 
+}
+
 function bindDepositInputs(qtyId, nomId, kembalianId) {
     const elQty = document.getElementById(qtyId);
     const elNom = document.getElementById(nomId);
@@ -82,7 +95,6 @@ function bindDepositInputs(qtyId, nomId, kembalianId) {
 
     elNom.addEventListener('input', (e) => {
         elNom.value = formatRupiahInput(e.target.value);
-        
         const amt = parseRupiahInt(e.target.value);
         const calcQty = Math.floor(amt / currentCockPrice);
         elQty.value = calcQty > 0 ? calcQty : '';
@@ -243,18 +255,193 @@ onAuthStateChanged(auth, (user) => {
     if (user) { 
         if(loginBtn) loginBtn.classList.add('hidden'); 
         if(logoutBtn) logoutBtn.classList.remove('hidden'); 
+        renderHistoryList(); 
+        renderBKUList();
     } else { 
         if(loginBtn) loginBtn.classList.remove('hidden'); 
         if(logoutBtn) logoutBtn.classList.add('hidden'); 
         if(document.getElementById('tab-settings')?.classList.contains('active')) {
             showTab('tab-members', document.querySelector('.nav-btn'));
         }
+        renderHistoryList(); 
+        renderBKUList();
     }
 });
 
 // ==========================================
-// 3. FIREBASE REALTIME LISTENERS
+// 3. FETCH & PAGINATION CORE LOGIC
 // ==========================================
+
+// --- FETCH HISTORY ---
+window.fetchHistory = async (isLoadMore = false) => {
+    const btnLoad = document.getElementById('btn-load-history');
+    if (!isLoadMore) {
+        lastVisibleHistory = null;
+        historyData = []; 
+    }
+    
+    try {
+        let q;
+        const historyCol = collection(db, "shuttlecock_history");
+        if (lastVisibleHistory) {
+            q = query(historyCol, orderBy("timestamp", "desc"), startAfter(lastVisibleHistory), limit(FETCH_LIMIT));
+        } else {
+            q = query(historyCol, orderBy("timestamp", "desc"), limit(FETCH_LIMIT));
+        }
+
+        const snap = await getDocs(q);
+        
+        if (!snap.empty) {
+            lastVisibleHistory = snap.docs[snap.docs.length - 1];
+            const newDocs = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            historyData = [...historyData, ...newDocs];
+            
+            if (snap.docs.length < FETCH_LIMIT) {
+                if(btnLoad) btnLoad.classList.add('hidden');
+            } else {
+                if(btnLoad) btnLoad.classList.remove('hidden');
+            }
+        } else {
+            if(btnLoad) btnLoad.classList.add('hidden');
+        }
+        
+        renderHistoryList();
+    } catch (e) { console.error("Gagal load history:", e); }
+};
+window.loadMoreHistory = () => fetchHistory(true);
+
+function renderHistoryList() {
+    const list = document.getElementById('list-history');
+    if(!list) return;
+    
+    if(historyData.length === 0) {
+        list.innerHTML = '<p class="text-center text-xs text-slate-400 mt-4 italic">Belum ada aktivitas kok.</p>';
+        return;
+    }
+    
+    list.innerHTML = historyData.map(d => {
+        const isU = d.type === 'USAGE';
+        let ds = '-'; let ts = '-';
+        if (d.timestamp) {
+            const dateObj = d.timestamp.toDate ? d.timestamp.toDate() : new Date(d.timestamp);
+            ds = dateObj.toLocaleDateString('id-ID', { day:'numeric', month:'short' });
+            ts = dateObj.toLocaleTimeString('id-ID', { hour:'2-digit', minute:'2-digit' });
+        }
+        const nom = Math.abs(d.amount) * currentCockPrice;
+        
+        const adminBtns = currentUser ? `
+            <div class="admin-only flex gap-1">
+                <button onclick="openEditTransaction('${d.id}', 'HISTORY')" class="p-1 text-slate-300 hover:text-emerald-600 transition"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg></button>
+                <button onclick="adminDeleteShuttlecock('${d.id}', '${d.type}')" class="p-1 text-slate-300 hover:text-rose-500 transition"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>
+            </div>
+        ` : '';
+
+        return `<div class="bg-white p-4 rounded-2xl flex items-center gap-4 shadow-sm border border-slate-50 group transition active:bg-slate-50">
+            <div class="w-10 h-10 rounded-xl flex items-center justify-center font-bold text-[10px] ${isU ? 'bg-rose-50 text-rose-600' : 'bg-emerald-50 text-emerald-600'}">${ds}</div>
+            <div class="flex-1 min-w-0">
+                <p class="font-bold text-sm text-slate-800 tracking-tight truncate">${(d.member_name || '').toUpperCase()}</p>
+                <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5 truncate">${ts} • ${d.note || 'Transaksi'}</p>
+            </div>
+            <div class="text-right flex flex-col items-end gap-0.5 shrink-0">
+                <div class="flex items-center gap-2">
+                    <p class="font-black text-sm ${isU ? 'text-rose-600' : 'text-emerald-600'}">${d.amount > 0 ? '+'+d.amount : d.amount} Kok</p>
+                    ${adminBtns}
+                </div>
+                <p class="text-[10px] font-mono font-bold ${isU ? 'text-rose-400' : 'text-emerald-400'}">Rp ${formatRupiahInput(nom.toString())}</p>
+            </div>
+        </div>`;
+    }).join('');
+}
+
+// --- FETCH BKU ---
+window.fetchBKU = async (isLoadMore = false) => {
+    const btnLoad = document.getElementById('btn-load-bku');
+    if (!isLoadMore) {
+        lastVisibleBKU = null;
+        bkuData = []; 
+    }
+    
+    try {
+        let q;
+        const bkuCol = collection(db, "bku_transactions");
+        if (lastVisibleBKU) {
+            q = query(bkuCol, orderBy("timestamp", "desc"), startAfter(lastVisibleBKU), limit(FETCH_LIMIT));
+        } else {
+            q = query(bkuCol, orderBy("timestamp", "desc"), limit(FETCH_LIMIT));
+        }
+
+        const snap = await getDocs(q);
+        
+        if (!snap.empty) {
+            lastVisibleBKU = snap.docs[snap.docs.length - 1];
+            const newDocs = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            bkuData = [...bkuData, ...newDocs];
+            
+            if (snap.docs.length < FETCH_LIMIT) {
+                if(btnLoad) btnLoad.classList.add('hidden');
+            } else {
+                if(btnLoad) btnLoad.classList.remove('hidden');
+            }
+        } else {
+            if(btnLoad) btnLoad.classList.add('hidden');
+        }
+        
+        renderBKUList();
+    } catch (e) { console.error("Gagal load BKU:", e); }
+};
+window.loadMoreBKU = () => fetchBKU(true);
+
+function renderBKUList() {
+    const list = document.getElementById('list-bku');
+    if(!list) return;
+
+    if(bkuData.length === 0) {
+        list.innerHTML = '<p class="text-center text-xs text-slate-400 mt-4 italic">Belum ada transaksi BKU.</p>';
+        return;
+    }
+
+    list.innerHTML = bkuData.map(d => {
+        const isD = d.type === 'DEBIT';
+        let dateStr = '';
+        if (d.timestamp) {
+            const dateObj = d.timestamp.toDate ? d.timestamp.toDate() : new Date(d.timestamp);
+            dateStr = dateObj.toLocaleDateString('id-ID');
+        }
+        
+        const adminBtns = currentUser ? `
+            <div class="admin-only flex gap-1">
+                ${d.linked_history_id ? 
+                    `<span class="p-1 text-slate-300" title="Dikunci: Edit transaksi ini melalui Tab LOG KOK"><svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg></span>` 
+                    : 
+                    `<button onclick="openEditTransaction('${d.id}', 'BKU')" class="p-1 text-slate-300 hover:text-emerald-500 transition"><svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg></button>
+                    <button onclick="adminDeleteBKU('${d.id}')" class="p-1 text-slate-300 hover:text-rose-400 transition"><svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>`
+                }
+            </div>
+        ` : '';
+
+        return `<div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-50 flex items-center gap-4">
+            <div class="p-2 rounded-xl ${isD ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'}">${isD ? '+' : '-'}</div>
+            <div class="flex-1 min-w-0">
+                <div class="flex justify-between items-center mb-1">
+                    <span class="text-[9px] font-black uppercase text-slate-400 tracking-wider truncate mr-2">${d.category}</span>
+                    <div class="flex items-center gap-2 shrink-0">
+                        <span class="text-[9px] text-slate-300 font-bold">${dateStr}</span>
+                        ${adminBtns}
+                    </div>
+                </div>
+                <div class="flex justify-between items-end gap-3 mt-1">
+                    <p class="text-xs font-semibold text-slate-700 italic flex-1 break-words">"${d.note}"</p>
+                    <div class="text-right shrink-0">
+                        <p class="font-black text-sm ${isD ? 'text-emerald-600' : 'text-rose-600'}">${isD ? '' : '-'}${formatRupiahInput(d.amount.toString())}</p>
+                    </div>
+                </div>
+            </div>
+        </div>`;
+    }).join('');
+}
+
+
+// --- REALTIME OBSERVERS UNTUK MEMBERS & STATS SAJA ---
 onSnapshot(collection(db, "members"), (snap) => {
     allMembers = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     const countEl = document.getElementById('display-member-count');
@@ -284,69 +471,6 @@ onSnapshot(collection(db, "members"), (snap) => {
     renderAdminUI();
 });
 
-onSnapshot(query(collection(db, "shuttlecock_history"), orderBy("timestamp", "desc"), limit(30)), (snap) => {
-    const list = document.getElementById('list-history');
-    if(list) {
-        list.innerHTML = snap.docs.map(doc => {
-            const d = doc.data(); const isU = d.type === 'USAGE';
-            const ds = d.timestamp?.toDate().toLocaleDateString('id-ID', { day:'numeric', month:'short' });
-            const ts = d.timestamp?.toDate().toLocaleTimeString('id-ID', { hour:'2-digit', minute:'2-digit' });
-            const nom = Math.abs(d.amount) * currentCockPrice;
-            return `<div class="bg-white p-4 rounded-2xl flex items-center gap-4 shadow-sm border border-slate-50 group transition active:bg-slate-50">
-                <div class="w-10 h-10 rounded-xl flex items-center justify-center font-bold text-[10px] ${isU ? 'bg-rose-50 text-rose-600' : 'bg-emerald-50 text-emerald-600'}">${ds || '-'}</div>
-                <div class="flex-1">
-                    <p class="font-bold text-sm text-slate-800 tracking-tight">${(d.member_name || '').toUpperCase()}</p>
-                    <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">${ts || '-'} • ${d.note || 'Transaksi'}</p>
-                </div>
-                <div class="text-right flex flex-col items-end gap-0.5">
-                    <div class="flex items-center gap-2">
-                        <p class="font-black text-sm ${isU ? 'text-rose-600' : 'text-emerald-600'}">${d.amount > 0 ? '+'+d.amount : d.amount} Kok</p>
-                        <div class="admin-only flex gap-1">
-                            <button onclick="openEditTransaction('${doc.id}', 'HISTORY')" class="p-1 text-slate-300 hover:text-emerald-600 transition"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg></button>
-                            <button onclick="adminDeleteShuttlecock('${doc.id}', '${d.type}')" class="p-1 text-slate-300 hover:text-rose-500 transition"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>
-                        </div>
-                    </div>
-                    <p class="text-[10px] font-mono font-bold ${isU ? 'text-rose-400' : 'text-emerald-400'}">Rp ${formatRupiahInput(nom.toString())}</p>
-                </div>
-            </div>`;
-        }).join('');
-    }
-});
-
-onSnapshot(query(collection(db, "bku_transactions"), orderBy("timestamp", "desc"), limit(30)), (snap) => {
-    const list = document.getElementById('list-bku');
-    if(list) {
-        list.innerHTML = snap.docs.map(doc => {
-            const d = doc.data(); const isD = d.type === 'DEBIT';
-            return `<div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-50 flex items-center gap-4">
-                <div class="p-2 rounded-xl ${isD ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'}">${isD ? '+' : '-'}</div>
-                <div class="flex-1 min-w-0">
-                    <div class="flex justify-between items-center mb-1">
-                        <span class="text-[9px] font-black uppercase text-slate-400 tracking-wider">${d.category}</span>
-                        <div class="flex items-center gap-2">
-                            <span class="text-[9px] text-slate-300 font-bold">${d.timestamp?.toDate().toLocaleDateString('id-ID') || ''}</span>
-                            <div class="admin-only flex gap-1">
-                                ${d.linked_history_id ? 
-                                    `<span class="p-1 text-slate-300" title="Dikunci: Edit transaksi ini melalui Tab LOG KOK"><svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg></span>` 
-                                    : 
-                                    `<button onclick="openEditTransaction('${doc.id}', 'BKU')" class="p-1 text-slate-300 hover:text-emerald-500 transition"><svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg></button>
-                                    <button onclick="adminDeleteBKU('${doc.id}')" class="p-1 text-slate-300 hover:text-rose-400 transition"><svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>`
-                                }
-                            </div>
-                        </div>
-                    </div>
-                    <div class="flex justify-between items-end gap-3 mt-1">
-                        <p class="text-xs font-semibold text-slate-700 italic flex-1 break-words">"${d.note}"</p>
-                        <div class="text-right shrink-0">
-                            <p class="font-black text-sm ${isD ? 'text-emerald-600' : 'text-rose-600'}">${isD ? '' : '-'}${formatRupiahInput(d.amount.toString())}</p>
-                        </div>
-                    </div>
-                </div>
-            </div>`;
-        }).join('');
-    }
-});
-
 onSnapshot(doc(db, "metadata", "stats"), (ds) => {
     if(ds.exists()) {
         const data = ds.data();
@@ -367,6 +491,7 @@ onSnapshot(doc(db, "metadata", "stats"), (ds) => {
         if(bkuExpenseEl) bkuExpenseEl.innerText = "Rp " + formatRupiahInput((data.total_expense_bku || 0).toString());
     }
 });
+
 
 // ==========================================
 // 4. ACTION FUNCTIONS (CRUD ADMIN)
@@ -460,11 +585,12 @@ window.adminEditMemberName = async (id, old) => {
             await updateDoc(doc(db, "members", id), { name: n.toUpperCase() });
             document.getElementById('profile-name').innerText = n.toUpperCase();
             appDialog({title: 'Berhasil', message: 'Nama anggota diperbarui.', type: 'success'});
+            fetchHistory(false);
         } catch (e) { appDialog({title: 'Error', message: e.message, type: 'error'}); }
     }
 };
 
-// [B] Transaksi Deposit (Diperbarui dengan Logika Donasi Kembalian)
+// [B] Transaksi Deposit
 window.openGlobalDepositModal = () => document.getElementById('modal-global-deposit').classList.remove('hidden');
 window.closeGlobalDepositModal = () => {
     document.getElementById('modal-global-deposit').classList.add('hidden');
@@ -477,32 +603,29 @@ window.closeGlobalDepositModal = () => {
     if(chk) chk.checked = false;
 };
 
-// [MENTOR NOTE] Inti Logika Integrasi Deposit & Donasi Secara Atomik
 async function performDepositLogic(id, n, qty, nominalFisik, isDonasi, modalCloseFn) {
     const cost = qty * currentCockPrice; 
     const kembalian = nominalFisik - cost;
     const actualDonasi = (isDonasi && kembalian > 0) ? kembalian : 0;
+    const MY = getMonthYearStr(null);
 
     try {
         const b = writeBatch(db);
         const historyRef = doc(collection(db, "shuttlecock_history"));
         const bkuRef = doc(collection(db, "bku_transactions"));
         
-        // 1. Eksekusi Deposit Normal
         b.update(doc(db, "members", id), { shuttlecock_balance: increment(qty) });
-        b.set(historyRef, { member_id: id, member_name: n, type: "DEPOSIT", amount: qty, note: "Deposit " + n, linked_bku_id: bkuRef.id, timestamp: serverTimestamp() });
-        b.set(bkuRef, { type: "DEBIT", category: "DEPOSIT KOK", amount: cost, note: "Deposit " + n, linked_history_id: historyRef.id, timestamp: serverTimestamp() });
+        b.set(historyRef, { member_id: id, member_name: n, type: "DEPOSIT", amount: qty, note: "Deposit " + n, linked_bku_id: bkuRef.id, month_year: MY, timestamp: serverTimestamp() });
+        b.set(bkuRef, { type: "DEBIT", category: "DEPOSIT KOK", amount: cost, note: "Deposit " + n, linked_history_id: historyRef.id, month_year: MY, timestamp: serverTimestamp() });
         
         let totalIncomeAccumulated = cost;
 
-        // 2. Eksekusi Donasi Kas (Jika ada sisa uang dan dicentang)
         if (actualDonasi > 0) {
             const donasiRef = doc(collection(db, "bku_transactions"));
-            b.set(donasiRef, { type: "DEBIT", category: "DONASI / SUMBANGAN", amount: actualDonasi, note: "Sisa kembalian deposit " + n, timestamp: serverTimestamp() });
+            b.set(donasiRef, { type: "DEBIT", category: "DONASI / SUMBANGAN", amount: actualDonasi, note: "Sisa kembalian deposit " + n, month_year: MY, timestamp: serverTimestamp() });
             totalIncomeAccumulated += actualDonasi;
         }
 
-        // 3. Update Global Stats BKU dalam satu tarikan
         b.update(doc(db, "metadata", "stats"), { 
             total_balance_bku: increment(totalIncomeAccumulated), 
             total_income_bku: increment(totalIncomeAccumulated) 
@@ -512,6 +635,9 @@ async function performDepositLogic(id, n, qty, nominalFisik, isDonasi, modalClos
         modalCloseFn();
         showTab('tab-members', document.querySelectorAll('.nav-btn')[0]);
         
+        fetchHistory(false); 
+        fetchBKU(false);
+
         let msg = `Deposit ${qty} Kok tercatat!`;
         if (actualDonasi > 0) msg += `\nSisa Rp ${formatRupiahInput(actualDonasi.toString())} masuk sbg Donasi.`;
         appDialog({title: 'Berhasil', message: msg, type: 'success'}); 
@@ -570,18 +696,22 @@ window.actionSubmitUsage = async () => {
     try {
         const b = writeBatch(db); 
         const td = processRealtimeDate(dv); 
+        const MY = getMonthYearStr(dv); 
         
         sel.forEach(el => {
             const [id, n] = el.value.split('|');
             b.update(doc(db, "members", id), { shuttlecock_balance: increment(-amt) });
             b.set(doc(collection(db, "shuttlecock_history")), { 
-                member_id: id, member_name: n, type: "USAGE", amount: -amt, note: document.getElementById('input-usage-note').value || "Bermain", timestamp: td 
+                member_id: id, member_name: n, type: "USAGE", amount: -amt, note: document.getElementById('input-usage-note').value || "Bermain", month_year: MY, timestamp: td 
             });
         });
         
         await b.commit(); 
         closeUsageModal();
         showTab('tab-history', document.querySelectorAll('.nav-btn')[1]);
+        
+        fetchHistory(false); 
+
         appDialog({title: 'Berhasil', message: 'Data Pemakaian Tersimpan!', type: 'success'}); 
     } catch (e) { appDialog({title: 'Error', message: e.message, type: 'error'}); }
 };
@@ -633,8 +763,9 @@ window.actionSubmitIncome = async () => {
     
     try {
         const b = writeBatch(db);
+        const MY = getMonthYearStr(dStr);
         b.set(doc(collection(db, "bku_transactions")), {
-            type: "DEBIT", category: c, amount: amt, note: n, timestamp: processRealtimeDate(dStr)
+            type: "DEBIT", category: c, amount: amt, note: n, month_year: MY, timestamp: processRealtimeDate(dStr)
         });
         b.update(doc(db, "metadata", "stats"), { 
             total_balance_bku: increment(amt), total_income_bku: increment(amt) 
@@ -643,6 +774,7 @@ window.actionSubmitIncome = async () => {
         await b.commit();
         closeKasModal();
         showTab('tab-bku', document.querySelectorAll('.nav-btn')[2]);
+        fetchBKU(false); 
         appDialog({title: 'Berhasil', message: 'Pemasukan Kas Dicatat!', type: 'success'});
     } catch (e) { appDialog({title: 'Error', message: e.message, type: 'error'}); }
 };
@@ -659,8 +791,9 @@ window.actionSubmitExpense = async () => {
     
     try {
         const b = writeBatch(db);
+        const MY = getMonthYearStr(dStr);
         b.set(doc(collection(db, "bku_transactions")), { 
-            type: "CREDIT", category: c, amount: amt, note: n || "Operasional", timestamp: processRealtimeDate(dStr) 
+            type: "CREDIT", category: c, amount: amt, note: n || "Operasional", month_year: MY, timestamp: processRealtimeDate(dStr) 
         });
         b.update(doc(db, "metadata", "stats"), { 
             total_balance_bku: increment(-amt), total_expense_bku: increment(amt) 
@@ -669,6 +802,7 @@ window.actionSubmitExpense = async () => {
         await b.commit(); 
         closeKasModal();
         showTab('tab-bku', document.querySelectorAll('.nav-btn')[2]);
+        fetchBKU(false); 
         appDialog({title: 'Berhasil', message: 'Pengeluaran Berhasil!', type: 'success'}); 
     } catch(e) { appDialog({title: 'Error', message: e.message, type: 'error'}); }
 };
@@ -695,7 +829,7 @@ window.openEditTransaction = async (id, type) => {
         const contextText = document.getElementById('edit-context-text');
         
         if(type === 'HISTORY') {
-            document.getElementById('edit-val-amount').value = Math.abs(d.amount); // Kok gak diformat
+            document.getElementById('edit-val-amount').value = Math.abs(d.amount); 
             label.innerText = "Jumlah Kok Baru";
             calcArea.classList.remove('hidden');
             contextBox.classList.remove('hidden');
@@ -772,6 +906,10 @@ window.processUpdateTransaction = async () => {
         }
         await b.commit();
         closeEditModal();
+        
+        if(type === 'HISTORY') fetchHistory(false);
+        else fetchBKU(false);
+
         appDialog({title: 'Berhasil', message: 'Koreksi berhasil!', type: 'success'});
     } catch (e) { appDialog({title: 'Error', message: e.message, type: 'error'}); }
 };
@@ -801,6 +939,7 @@ window.adminDeleteShuttlecock = async (id, type) => {
         }
         b.delete(doc(db, "shuttlecock_history", id)); 
         await b.commit();
+        fetchHistory(false); 
         appDialog({title: 'Terhapus', message: 'Log berhasil dihapus!', type: 'success'});
     } catch (e) { appDialog({title: 'Error', message: e.message, type: 'error'}); }
 };
@@ -825,8 +964,102 @@ window.adminDeleteBKU = async (id) => {
         }
         b.delete(doc(db, "bku_transactions", id)); 
         await b.commit();
+        fetchBKU(false); 
         appDialog({title: 'Terhapus', message: 'Data kas berhasil dihapus!', type: 'success'});
     } catch (e) { appDialog({title: 'Error', message: e.message, type: 'error'}); }
+};
+
+// [F] FITUR TUTUP BUKU (ROLLOVER SYSTEM) - HIGH RISK
+window.actionTutupBuku = async () => {
+    if (!currentUser) return;
+    
+    const year = new Date().getFullYear();
+    const keyword = `TUTUP BUKU ${year}`;
+    
+    const konfirmasi = await appDialog({
+        title: 'PERINGATAN FATAL!', 
+        message: `Tindakan ini tidak bisa dibatalkan! Semua log transaksi akan musnah dan diringkas jadi Saldo Awal.\n\nKetik persis: "${keyword}"`, 
+        type: 'prompt'
+    });
+
+    if (konfirmasi !== keyword) {
+        if (konfirmasi !== null) appDialog({title: 'Dibatalkan', message: 'Kata kunci salah. Keamanan sistem mencegah proses.', type: 'error'});
+        return;
+    }
+
+    const loadingUI = document.getElementById('loading-overlay');
+    if(loadingUI) loadingUI.classList.remove('hidden');
+
+    try {
+        const statsSnap = await getDoc(doc(db, "metadata", "stats"));
+        let totalBalanceBku = 0;
+        if(statsSnap.exists()) totalBalanceBku = statsSnap.data().total_balance_bku || 0;
+
+        const membersSnap = await getDocs(collection(db, "members"));
+        const memberData = membersSnap.docs.map(d => ({id: d.id, ...d.data()}));
+
+        const deleteInBatches = async (colName) => {
+            let q = query(collection(db, colName), limit(400)); 
+            let snap = await getDocs(q);
+            while (!snap.empty) {
+                const b = writeBatch(db);
+                snap.docs.forEach(d => b.delete(d.ref));
+                await b.commit();
+                snap = await getDocs(q); 
+            }
+        };
+
+        await deleteInBatches("shuttlecock_history");
+        await deleteInBatches("bku_transactions");
+
+        const finalBatch = writeBatch(db);
+        const MY = getMonthYearStr(null);
+        const ts = serverTimestamp();
+
+        finalBatch.update(doc(db, "metadata", "stats"), {
+            total_income_bku: 0,
+            total_expense_bku: 0
+        });
+
+        if (totalBalanceBku !== 0) {
+            finalBatch.set(doc(collection(db, "bku_transactions")), {
+                type: totalBalanceBku > 0 ? "DEBIT" : "CREDIT",
+                category: "SALDO AWAL",
+                amount: Math.abs(totalBalanceBku),
+                note: `Sisa Kas Bawaan setelah Tutup Buku`,
+                month_year: MY,
+                timestamp: ts
+            });
+        }
+
+        memberData.forEach(m => {
+            if (m.shuttlecock_balance !== 0) {
+                finalBatch.set(doc(collection(db, "shuttlecock_history")), {
+                    member_id: m.id,
+                    member_name: m.name,
+                    type: m.shuttlecock_balance > 0 ? "DEPOSIT" : "USAGE", 
+                    amount: m.shuttlecock_balance,
+                    note: "Sisa Saldo Bawaan Periode Sebelumnya",
+                    month_year: MY,
+                    timestamp: ts
+                });
+            }
+        });
+
+        await finalBatch.commit();
+
+        if(loadingUI) loadingUI.classList.add('hidden');
+        
+        fetchHistory(false);
+        fetchBKU(false);
+
+        appDialog({title: 'Tutup Buku Sukses!', message: 'Sistem berhasil direset. Selamat datang di periode pembukuan baru.', type: 'success'});
+        
+    } catch (e) {
+        if(loadingUI) loadingUI.classList.add('hidden');
+        console.error(e);
+        appDialog({title: 'FATAL ERROR', message: 'Sistem gagal menyelesaikan tutup buku: ' + e.message, type: 'error'});
+    }
 };
 
 // ==========================================
@@ -836,4 +1069,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setupRupiahFormatter();
     bindDepositInputs('input-deposit-qty', 'input-deposit-nominal', 'deposit-kembalian');
     bindDepositInputs('input-global-deposit-qty', 'input-global-deposit-nominal', 'global-deposit-kembalian');
+    
+    fetchHistory(false);
+    fetchBKU(false);
 });
