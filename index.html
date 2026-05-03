@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>PB. Batu Betulis App</title>
+    <!-- Menambahkan Favicon Firebase -->
+    <link rel="icon" href="https://firebase.google.com/favicon.ico" type="image/x-icon">
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Panggilan ke file CSS Eksternal (Lokal) -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="bg-slate-50 text-slate-900 pb-28">
+
+    <!-- App Bar -->
+    <header class="bg-white border-b border-slate-100 sticky top-0 z-40 px-6 py-4 flex justify-between items-center">
+        <div>
+            <h1 class="text-lg font-bold text-emerald-800 tracking-tight uppercase">PB. Batu Betulis</h1>
+            <div class="flex items-center gap-1">
+                <span class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
+                <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Digital Management</p>
+            </div>
+        </div>
+        <div id="auth-section">
+            <button id="btn-login-trigger" class="p-2 bg-slate-100 rounded-full transition active:scale-90">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+                </svg>
+            </button>
+            <button id="btn-logout" class="hidden p-2 bg-rose-50 rounded-full text-rose-600 transition active:scale-90">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+                </svg>
+            </button>
+        </div>
+    </header>
+
+    <main class="container mx-auto max-w-md px-4 py-6">
+        
+        <!-- Summary Dashboard -->
+        <div class="grid grid-cols-2 gap-3 mb-6">
+            <div class="bg-emerald-700 p-5 rounded-3xl text-center shadow-lg shadow-emerald-200/50 flex flex-col justify-center">
+                <p class="text-[9px] text-emerald-100 font-black uppercase tracking-widest mb-1.5">Saldo Kas Klub</p>
+                <h3 id="display-bku-total" class="text-xl font-black text-white truncate tracking-tighter">Rp 0</h3>
+            </div>
+            <div class="bg-white p-5 rounded-3xl border border-slate-100 text-center shadow-sm flex flex-col justify-center">
+                <p class="text-[9px] text-slate-400 font-black uppercase tracking-widest mb-1.5">Total Anggota</p>
+                <h3 id="display-member-count" class="text-xl font-black text-slate-800 truncate tracking-tighter">0 Orang</h3>
+            </div>
+        </div>
+
+        <!-- SCREEN: SALDO ANGGOTA (DEPOSIT) -->
+        <section id="tab-members" class="tab-content active space-y-3">
+            <div class="flex justify-between items-center px-2 mb-1">
+                <div class="flex items-center gap-2">
+                    <h2 class="text-[11px] font-black text-slate-400 uppercase tracking-widest">Daftar Anggota</h2>
+                </div>
+                <span id="display-cock-price" class="text-[9px] bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded-full font-bold">@3.000 / KOK</span>
+            </div>
+            <div id="list-members" class="space-y-2"></div>
+            
+            <div class="mt-8 bg-rose-600 p-4 rounded-2xl text-white shadow-lg shadow-rose-100 border-t border-white/10 transition active:brightness-95 text-center">
+                <p class="text-[9px] font-black uppercase tracking-widest text-rose-100 mb-0.5">Estimasi Piutang (Tekor)</p>
+                <h4 id="display-total-tekor-nominal" class="text-lg font-black tracking-tighter">Rp 0</h4>
+            </div>
+        </section>
+
+        <!-- SCREEN: RIWAYAT KOK (LOG) -->
+        <section id="tab-history" class="tab-content space-y-3">
+            <h2 class="font-bold text-slate-800 px-2 mb-2 italic text-sm mt-4">Log Aktivitas Kok</h2>
+            <div id="list-history" class="space-y-2"></div>
+        </section>
+
+        <!-- SCREEN: LAPORAN BKU (KAS) -->
+        <section id="tab-bku" class="tab-content space-y-3">
+            <!-- Mini Dashboard KAS (Pemasukan & Pengeluaran) -->
+            <div class="grid grid-cols-2 gap-3 mb-4 mt-2">
+                <div class="bg-blue-50 p-4 rounded-3xl border border-blue-100 text-center flex flex-col justify-center shadow-sm">
+                    <p class="text-[9px] text-blue-600 font-black uppercase tracking-widest mb-1">Total Masuk</p>
+                    <h3 id="display-bku-income" class="text-sm font-black text-blue-800 truncate tracking-tighter">Rp 0</h3>
+                </div>
+                <div class="bg-rose-50 p-4 rounded-3xl border border-rose-100 text-center flex flex-col justify-center shadow-sm">
+                    <p class="text-[9px] text-rose-600 font-black uppercase tracking-widest mb-1">Total Keluar</p>
+                    <h3 id="display-bku-expense" class="text-sm font-black text-rose-800 truncate tracking-tighter">Rp 0</h3>
+                </div>
+            </div>
+
+            <div class="flex justify-between items-center px-2 mb-2 mt-6">
+                <h2 class="font-bold text-slate-800">Buku Kas Umum</h2>
+                <span class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Masuk & Keluar</span>
+            </div>
+            <div id="list-bku" class="space-y-2"></div>
+        </section>
+
+        <!-- SCREEN: PENGATURAN (ADMIN ONLY) -->
+        <section id="tab-settings" class="tab-content space-y-3">
+            <div class="admin-block space-y-4 mb-6">
+                <div class="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm border-l-4 border-l-purple-500">
+                    <h3 class="text-[10px] font-black text-purple-600 mb-4 flex items-center gap-2 uppercase tracking-widest">Pengaturan Global</h3>
+                    <div class="space-y-3">
+                        <div>
+                            <label class="text-[10px] font-bold text-slate-400 uppercase ml-2">Harga Kok / Bh (Rp)</label>
+                            <input type="number" id="input-setting-price" placeholder="Misal: 3000" class="w-full bg-slate-50 p-4 rounded-2xl border-none text-sm font-bold focus:ring-2 focus:ring-purple-500 mt-1">
+                        </div>
+                        <button onclick="actionSaveSettings()" class="w-full bg-purple-600 text-white py-4 rounded-2xl font-bold active:scale-95 transition uppercase text-xs tracking-widest shadow-lg shadow-purple-100 mt-2">Simpan Pengaturan</button>
+                    </div>
+                </div>
+            </div>
+            <div class="text-center text-xs text-slate-400 mt-8 font-bold italic admin-block">Halaman ini hanya terlihat oleh Admin.</div>
+            <div class="text-center text-xs text-slate-400 mt-8 font-bold italic admin-only hidden">Silakan login untuk melihat pengaturan.</div>
+        </section>
+    </main>
+
+    <!-- Overlay Gelap untuk Menu FAB -->
+    <div id="fab-overlay" onclick="toggleFabMenu()" class="hidden fixed inset-0 bg-slate-900/40 backdrop-blur-[2px] z-[45] transition-opacity duration-300 opacity-0"></div>
+
+    <!-- Bottom Navigation (Dengan Central Floating Action Button) -->
+    <nav class="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t border-slate-100 px-2 pt-2 pb-4 flex justify-around items-end z-50">
+        
+        <button onclick="showTab('tab-members', this)" class="nav-btn flex flex-col items-center gap-1 bottom-nav-active transition active:scale-90 w-16">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+            <span class="text-[9px] font-black uppercase tracking-tighter">ANGGOTA</span>
+        </button>
+        
+        <button onclick="showTab('tab-history', this)" class="nav-btn flex flex-col items-center gap-1 text-slate-400 transition active:scale-90 w-16">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+            <span class="text-[9px] font-black uppercase tracking-tighter">Log</span>
+        </button>
+
+        <!-- BIG CENTRAL FAB (ACTION SHEET - ADMIN ONLY) -->
+        <div class="admin-only flex justify-center relative w-16">
+            
+            <!-- Floating Action Menu Premium -->
+            <div id="fab-menu" class="hidden absolute bottom-20 left-1/2 -translate-x-1/2 w-[80vw] max-w-[300px] bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl border border-slate-100 p-2.5 flex flex-col z-[60] origin-bottom opacity-0 scale-95 translate-y-4 transition-all duration-300">
+                <!-- Header Card -->
+                <div class="px-3 py-2 border-b border-slate-100 mb-1.5">
+                    <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest text-center">Menu Aksi Cepat</p>
+                </div>
+                
+                <!-- Items -->
+                <button onclick="openAddMemberModal(); toggleFabMenu();" class="flex items-center gap-3 w-full p-2.5 hover:bg-slate-50 rounded-2xl text-left active:scale-95 transition group">
+                    <div class="w-10 h-10 rounded-xl bg-slate-100 text-slate-500 group-hover:bg-slate-200 group-hover:text-slate-800 flex items-center justify-center transition shrink-0">
+                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/></svg>
+                    </div>
+                    <div class="flex-1">
+                        <p class="text-xs font-black text-slate-700 uppercase tracking-wider">Anggota Baru</p>
+                        <p class="text-[9px] font-bold text-slate-400 mt-0.5 leading-tight">Pendaftaran nama baru</p>
+                    </div>
+                </button>
+                
+                <button onclick="openGlobalDepositModal(); toggleFabMenu();" class="flex items-center gap-3 w-full p-2.5 hover:bg-emerald-50 rounded-2xl text-left active:scale-95 transition group">
+                    <div class="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-600 group-hover:bg-emerald-200 group-hover:text-emerald-800 flex items-center justify-center transition shrink-0">
+                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                    </div>
+                    <div class="flex-1">
+                        <p class="text-xs font-black text-emerald-800 uppercase tracking-wider">Deposit Kok</p>
+                        <p class="text-[9px] font-bold text-emerald-600/70 mt-0.5 leading-tight">Tambah saldo anggota</p>
+                    </div>
+                </button>
+
+                <button onclick="openUsageModal(); toggleFabMenu();" class="flex items-center gap-3 w-full p-2.5 hover:bg-rose-50 rounded-2xl text-left active:scale-95 transition group">
+                    <div class="w-10 h-10 rounded-xl bg-rose-100 text-rose-600 group-hover:bg-rose-200 group-hover:text-rose-800 flex items-center justify-center transition shrink-0">
+                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                    </div>
+                    <div class="flex-1">
+                        <p class="text-xs font-black text-rose-800 uppercase tracking-wider">Pemakaian Match</p>
+                        <p class="text-[9px] font-bold text-rose-600/70 mt-0.5 leading-tight">Catat kok yang terpakai</p>
+                    </div>
+                </button>
+
+                <button onclick="openKasModal(); toggleFabMenu();" class="flex items-center gap-3 w-full p-2.5 hover:bg-blue-50 rounded-2xl text-left active:scale-95 transition group">
+                    <div class="w-10 h-10 rounded-xl bg-blue-100 text-blue-600 group-hover:bg-blue-200 group-hover:text-blue-800 flex items-center justify-center transition shrink-0">
+                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    </div>
+                    <div class="flex-1">
+                        <p class="text-xs font-black text-blue-800 uppercase tracking-wider">Catat Keuangan</p>
+                        <p class="text-[9px] font-bold text-blue-600/70 mt-0.5 leading-tight">Kas masuk & pengeluaran</p>
+                    </div>
+                </button>
+            </div>
+            
+            <div class="absolute bottom-1 bg-white rounded-full p-1.5 shadow-sm border border-slate-100 z-[61]">
+                <button onclick="toggleFabMenu()" id="btn-fab" class="flex items-center justify-center bg-emerald-600 text-white w-12 h-12 rounded-full shadow-lg shadow-emerald-600/40 active:scale-90 transition-all duration-300 hover:bg-emerald-700" title="Menu Aksi">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 transition-transform duration-300" id="icon-fab" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+                    </svg>
+                </button>
+            </div>
+            <!-- Invisible Spacer -->
+            <div class="h-10"></div>
+        </div>
+
+        <button onclick="showTab('tab-bku', this)" class="nav-btn flex flex-col items-center gap-1 text-slate-400 transition active:scale-90 w-16">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
+            <span class="text-[9px] font-black uppercase tracking-tighter">Kas</span>
+        </button>
+        
+        <button onclick="showTab('tab-settings', this)" class="nav-btn flex flex-col items-center gap-1 text-slate-400 transition active:scale-90 admin-only w-16">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+            <span class="text-[9px] font-black uppercase tracking-tighter">Setting</span>
+        </button>
+    </nav>
+
+    <!-- Modal Login -->
+    <div id="modal-login" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100]">
+        <div class="bg-white w-full max-w-md rounded-[32px] p-8 animate-slide-up shadow-2xl text-center">
+            <h2 class="text-2xl font-bold mb-1">Login Pengurus</h2>
+            <p class="text-slate-400 text-sm mb-8">PB. Batu Betulis Management System</p>
+            <div class="space-y-4 mb-10">
+                <input type="email" id="login-email" placeholder="Email" class="w-full bg-slate-50 p-4 rounded-2xl border-none focus:ring-2 focus:ring-emerald-500">
+                <input type="password" id="login-pass" placeholder="Password" class="w-full bg-slate-50 p-4 rounded-2xl border-none focus:ring-2 focus:ring-emerald-500">
+                <button id="btn-do-login" class="w-full bg-emerald-700 text-white py-4 rounded-2xl font-bold active:scale-95 transition">MASUK</button>
+                <button onclick="closeLogin()" class="w-full py-2 text-slate-400 font-bold text-xs uppercase tracking-widest">Batal</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 1: Tambah Anggota -->
+    <div id="modal-add-member" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[110]">
+        <div class="bg-white w-full max-w-md rounded-[32px] p-8 animate-slide-up shadow-2xl relative">
+            <h2 class="text-xl font-bold mb-1 uppercase tracking-tight text-slate-800 text-center">Anggota Baru</h2>
+            <p class="text-slate-400 text-[10px] mb-6 font-bold uppercase tracking-widest italic text-center">Pendaftaran Anggota Klub</p>
+            
+            <div class="space-y-4 mb-4">
+                <input type="text" id="input-new-member" placeholder="Nama Lengkap Anggota" class="w-full bg-slate-50 p-4 rounded-2xl border-none text-sm font-bold focus:ring-2 focus:ring-slate-800">
+                <button onclick="actionAddMember()" class="w-full bg-slate-800 text-white py-4 rounded-2xl font-bold active:scale-95 transition shadow-lg shadow-slate-200 uppercase text-xs tracking-widest">Simpan Anggota</button>
+                <button onclick="closeAddMemberModal()" class="w-full py-2 text-slate-400 font-bold text-xs uppercase tracking-widest">Batal</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 2: Unified Profil Modal -->
+    <div id="modal-member-profile" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[110]">
+        <div class="bg-white w-full max-w-md rounded-[32px] p-8 animate-slide-up shadow-2xl relative">
+            
+            <!-- Profil Header -->
+            <div class="flex justify-between items-start mb-6">
+                <div class="flex-1 pr-4">
+                    <div class="flex items-center gap-2 mb-1">
+                        <h2 id="profile-name" class="text-xl font-bold uppercase tracking-tight text-slate-800 truncate">Nama</h2>
+                        <button onclick="triggerEditName()" class="p-1.5 bg-slate-100 text-slate-500 rounded-lg active:scale-95 transition hover:text-emerald-600 flex-shrink-0" title="Edit Nama">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                        </button>
+                    </div>
+                    <p class="text-[10px] font-bold uppercase tracking-widest italic text-slate-400">Profil Anggota</p>
+                </div>
+                <div class="text-right flex-shrink-0">
+                    <p class="text-[9px] font-bold uppercase tracking-widest text-slate-400 mb-0.5">Sisa Saldo</p>
+                    <p id="profile-balance" class="text-lg font-black text-emerald-600">0 Kok</p>
+                </div>
+            </div>
+
+            <!-- Area Input Deposit -->
+            <div class="p-4 bg-emerald-50 rounded-3xl mb-6 border border-emerald-100">
+                <h3 class="text-[10px] font-black text-emerald-700 uppercase tracking-widest mb-3 ml-2">Tambah Deposit Kok</h3>
+                <input type="hidden" id="profile-member-id">
+                <input type="number" id="input-deposit-amount" placeholder="Input Jumlah Kok (Bh)" class="w-full bg-white p-4 rounded-2xl border-none text-sm font-bold focus:ring-2 focus:ring-emerald-500 mb-2 shadow-sm">
+                <div class="flex justify-between items-center px-2 py-1 mb-3">
+                    <span class="text-[10px] font-bold text-emerald-800 uppercase opacity-60">Total Tagihan:</span>
+                    <span id="deposit-calc" class="font-black text-emerald-700">Rp 0</span>
+                </div>
+                <button onclick="actionSubmitDeposit()" class="w-full bg-emerald-600 text-white py-3.5 rounded-2xl font-bold active:scale-95 transition shadow-lg shadow-emerald-200 uppercase text-xs tracking-widest">Proses Deposit</button>
+            </div>
+            
+            <button onclick="closeMemberProfile()" class="w-full py-2 text-slate-400 font-bold text-xs uppercase tracking-widest">Tutup Laman Profil</button>
+        </div>
+    </div>
+
+    <!-- MODAL 3: Global Deposit Kok (Bypass) -->
+    <div id="modal-global-deposit" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[110]">
+        <div class="bg-white w-full max-w-md rounded-[32px] p-8 animate-slide-up shadow-2xl relative">
+            <h2 class="text-xl font-bold mb-1 uppercase tracking-tight text-emerald-800 text-center">Deposit Kok</h2>
+            <p class="text-slate-400 text-[10px] mb-6 font-bold uppercase tracking-widest italic text-center">Penambahan Saldo Anggota</p>
+            <div class="space-y-4 mb-4">
+                <select id="select-global-deposit-member" class="w-full bg-slate-50 p-4 rounded-2xl border-none text-sm font-semibold"></select>
+                <input type="number" id="input-global-deposit-amount" placeholder="Jumlah Kok" class="w-full bg-slate-50 p-4 rounded-2xl border-none text-sm font-bold focus:ring-2 focus:ring-emerald-500">
+                <div class="flex justify-between items-center p-4 bg-emerald-50 rounded-2xl">
+                    <span class="text-[10px] font-bold text-emerald-800 uppercase">Total Nominal:</span>
+                    <span id="global-deposit-calc" class="font-black text-emerald-700">Rp 0</span>
+                </div>
+                <button onclick="actionSubmitGlobalDeposit()" class="w-full bg-emerald-600 text-white py-4 rounded-2xl font-bold active:scale-95 transition shadow-lg shadow-emerald-100 uppercase text-xs tracking-widest">Proses Deposit</button>
+                <button onclick="closeGlobalDepositModal()" class="w-full py-2 text-slate-400 font-bold text-xs uppercase tracking-widest">Batal</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 4: Pemakaian Match -->
+    <div id="modal-usage" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[110]">
+        <div class="bg-white w-full max-w-md rounded-[32px] p-8 animate-slide-up shadow-2xl relative">
+            <h2 class="text-xl font-bold mb-1 uppercase tracking-tight text-rose-600 text-center">Pemakaian Match</h2>
+            <p class="text-slate-400 text-[10px] mb-6 font-bold uppercase tracking-widest italic text-center">Catat Penggunaan Kok</p>
+            <div class="space-y-4 mb-4">
+                
+                <!-- Chips Preview Area -->
+                <div>
+                    <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 text-center">Pilih Pemain</p>
+                    <div id="admin-multi-select" class="flex gap-3 overflow-x-auto no-scrollbar py-2 px-1 border-b border-slate-100 min-h-[60px] items-center"></div>
+                    
+                    <div id="usage-preview-chips" class="min-h-[28px] mt-3 px-1">
+                        <span class="text-[10px] font-bold text-slate-300 italic">Belum ada pemain terpilih</span>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3 mt-4">
+                    <div>
+                        <label class="text-[9px] font-bold text-slate-400 uppercase ml-2">Tanggal</label>
+                        <input type="date" id="input-usage-date" class="w-full bg-slate-50 p-3 rounded-2xl border-none text-xs font-bold focus:ring-2 focus:ring-rose-500">
+                    </div>
+                    <div>
+                        <label class="text-[9px] font-bold text-slate-400 uppercase ml-2">Jumlah Kok</label>
+                        <input type="number" id="input-usage-amount" value="2" class="w-full bg-slate-50 p-3 rounded-2xl border-none text-sm font-bold focus:ring-2 focus:ring-rose-500">
+                    </div>
+                </div>
+                <input type="text" id="input-usage-note" placeholder="Keterangan Sesi" class="w-full bg-slate-50 p-4 rounded-2xl border-none text-sm focus:ring-2 focus:ring-rose-500">
+                <button onclick="actionSubmitUsage()" class="w-full bg-slate-900 text-white py-4 rounded-2xl font-bold active:scale-95 transition shadow-lg shadow-slate-200 uppercase text-xs tracking-widest">Simpan Pemakaian</button>
+                <button onclick="closeUsageModal()" class="w-full py-2 text-slate-400 font-bold text-xs uppercase tracking-widest">Batal</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 5: Catat Kas (BKU) dengan Pill Switch -->
+    <div id="modal-kas" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[110]">
+        <div class="bg-white w-full max-w-md rounded-[32px] p-8 animate-slide-up shadow-2xl relative">
+            <h2 class="text-xl font-bold mb-4 uppercase tracking-tight text-slate-800 text-center">Catat Kas (BKU)</h2>
+            
+            <!-- Pill Switch UI -->
+            <div class="flex p-1 bg-slate-100 rounded-2xl mb-6">
+                <button onclick="switchKasTab('INCOME')" id="btn-kas-income" class="flex-1 py-3 text-[10px] font-black uppercase tracking-widest rounded-xl bg-white shadow-sm text-blue-600 transition">Pemasukan</button>
+                <button onclick="switchKasTab('EXPENSE')" id="btn-kas-expense" class="flex-1 py-3 text-[10px] font-black uppercase tracking-widest rounded-xl text-slate-400 transition hover:text-slate-600">Pengeluaran</button>
+            </div>
+
+            <!-- Form Income (Pemasukan) -->
+            <div id="form-income" class="space-y-3 mb-4">
+                <select id="input-income-category" class="w-full bg-slate-50 p-4 rounded-2xl border-none text-sm font-semibold">
+                    <option value="DONASI / SUMBANGAN">DONASI / SUMBANGAN</option>
+                    <option value="SPONSOR">SPONSOR</option>
+                    <option value="LAINNYA">LAIN-LAIN</option>
+                </select>
+                <input type="number" id="input-income-amount" placeholder="Nominal Uang Masuk (Rp)" class="w-full bg-slate-50 p-4 rounded-2xl border-none text-sm font-bold focus:ring-2 focus:ring-blue-500">
+                <input type="text" id="input-income-note" placeholder="Nama Donatur / Sumber (Wajib)" class="w-full bg-slate-50 p-4 rounded-2xl border-none text-sm focus:ring-2 focus:ring-blue-500">
+                <button onclick="actionSubmitIncome()" class="w-full bg-blue-600 text-white py-4 rounded-2xl font-bold active:scale-95 transition uppercase text-xs tracking-widest shadow-lg shadow-blue-100">Catat Pemasukan</button>
+            </div>
+
+            <!-- Form Expense (Pengeluaran) -->
+            <div id="form-expense" class="hidden space-y-3 mb-4">
+                <select id="input-expense-category" class="w-full bg-slate-50 p-4 rounded-2xl border-none text-sm font-semibold">
+                    <option value="PEMBELIAN KOK">PEMBELIAN KOK</option>
+                    <option value="LISTRIK">TOKEN LISTRIK</option>
+                    <option value="MAINTENANCE">LAMPU / PERBAIKAN</option>
+                    <option value="LAINNYA">LAIN-LAIN</option>
+                </select>
+                <input type="number" id="input-expense-amount" placeholder="Nominal Uang Keluar (Rp)" class="w-full bg-slate-50 p-4 rounded-2xl border-none text-sm font-bold focus:ring-2 focus:ring-rose-500">
+                <input type="text" id="input-expense-note" placeholder="Keterangan Pengeluaran" class="w-full bg-slate-50 p-4 rounded-2xl border-none text-sm focus:ring-2 focus:ring-rose-500">
+                <button onclick="actionSubmitExpense()" class="w-full bg-rose-600 text-white py-4 rounded-2xl font-bold active:scale-95 transition uppercase text-xs tracking-widest shadow-lg shadow-rose-100">Catat Pengeluaran</button>
+            </div>
+
+            <button onclick="closeKasModal()" class="w-full py-2 text-slate-400 font-bold text-xs uppercase tracking-widest">Batal</button>
+        </div>
+    </div>
+
+    <!-- Modal Edit Transaksi Historis BKU/LOG -->
+    <div id="modal-edit" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[110]">
+        <div class="bg-white w-full max-w-md rounded-[32px] p-8 animate-slide-up shadow-2xl relative">
+            <h2 id="edit-modal-title" class="text-xl font-bold mb-1 uppercase tracking-tight text-emerald-800 text-center">Koreksi Data</h2>
+            <p id="edit-modal-subtitle" class="text-slate-400 text-[10px] mb-4 font-bold uppercase tracking-widest italic text-center">Penyesuaian Manual</p>
+            
+            <div id="edit-context-box" class="bg-emerald-50 border border-emerald-100 p-3 rounded-xl mb-6 text-center hidden">
+                <p id="edit-context-text" class="text-xs font-black text-emerald-800 tracking-tight"></p>
+            </div>
+
+            <input type="hidden" id="edit-target-id">
+            <input type="hidden" id="edit-target-type">
+            <div class="space-y-4 mb-8">
+                <div>
+                    <label id="edit-label-amount" class="text-[10px] font-black text-slate-400 uppercase mb-1 block ml-2">Nilai Baru</label>
+                    <input type="number" id="edit-val-amount" class="w-full bg-slate-50 p-4 rounded-2xl border-none font-bold text-emerald-700 focus:ring-2 focus:ring-emerald-500">
+                    <div id="edit-calc-display" class="mt-2 ml-2 flex justify-between items-center">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase">Estimasi Nominal:</span>
+                        <span id="edit-live-nominal" class="text-xs font-black text-emerald-600">Rp 0</span>
+                    </div>
+                </div>
+                <div>
+                    <label class="text-[10px] font-black text-slate-400 uppercase mb-1 block ml-2">Catatan Perubahan</label>
+                    <input type="text" id="edit-val-note" class="w-full bg-slate-50 p-4 rounded-2xl border-none text-sm focus:ring-2 focus:ring-emerald-500">
+                </div>
+                <button onclick="processUpdateTransaction()" class="w-full bg-emerald-600 text-white py-4 rounded-2xl font-bold shadow-lg shadow-emerald-100 active:scale-95 transition">SIMPAN PERUBAHAN</button>
+                <button onclick="closeEditModal()" class="w-full py-2 text-slate-400 font-bold text-xs uppercase tracking-widest">Batal</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- PANGGILAN FILE JAVASCRIPT MODULE EKSTERNAL (Lokal) -->
+    <script type="module" src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,47 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+
+body { 
+    font-family: 'Plus Jakarta Sans', sans-serif; 
+    -webkit-tap-highlight-color: transparent;
+}
+
+.tab-content { 
+    display: none; 
+}
+
+.tab-content.active { 
+    display: block; 
+    animation: fadeIn 0.3s ease; 
+}
+
+@keyframes fadeIn { 
+    from { opacity: 0; transform: translateY(10px); } 
+    to { opacity: 1; transform: translateY(0); } 
+}
+
+.no-scrollbar::-webkit-scrollbar { 
+    display: none; 
+}
+
+.no-scrollbar { 
+    -ms-overflow-style: none; 
+    scrollbar-width: none; 
+}
+
+.bottom-nav-active { 
+    color: #059669; 
+}
+
+.bottom-nav-active svg { 
+    fill: #059669; 
+}
+
+/* Logic Visibilitas Admin Global */
+.admin-only { display: none !important; }
+body.is-admin .admin-only { display: flex !important; }
+.admin-block { display: none !important; }
+body.is-admin .admin-block { display: block !important; }
+
+/* Interaksi Kartu Member untuk Admin */
+body.is-admin .member-card { cursor: pointer; }
+body.is-admin .member-card:hover { border-color: #a7f3d0; }
