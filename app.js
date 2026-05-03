@@ -325,7 +325,7 @@ onSnapshot(query(collection(db, "bku_transactions"), orderBy("timestamp", "desc"
                         <span class="text-[9px] text-slate-300 font-bold">${d.timestamp?.toDate().toLocaleDateString('id-ID') || ''}</span>
                     </div>
                     <div class="flex justify-between items-end">
-                        <p class="text-xs font-semibold text-slate-700 italic line-clamp-1 max-w-[50%]">"${d.note}"</p>
+                        <p class="text-xs font-semibold text-slate-700 italic line-clamp-1 max-w-[75%]">"${d.note}"</p>
                         <div class="text-right flex items-center gap-2">
                             <p class="font-black text-sm ${isD ? 'text-emerald-600' : 'text-rose-600'}">${isD ? '' : '-'}${formatRupiahInput(d.amount.toString())}</p>
                             <div class="admin-only flex gap-1">
