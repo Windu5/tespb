@@ -2,9 +2,9 @@
 =========================================================
 PB. BATU BETULIS - CORE APPLICATION LOGIC
 [MENTOR NOTE]
-1. Semua fungsi state & DOM diekspos ke 'window' karena dipanggil dari HTML secara inline (onclick).
-2. 'limit(30)' sudah diterapkan pada log & BKU untuk mencegah kuota bocor.
-3. Patch 'Desync' Keuangan sudah diterapkan pada Edit & Delete Transaksi.
+1. Logika 'Two-Way Binding' telah dipasang kuat dan dihubungkan ke ID HTML yang tepat.
+2. Penangkapan Value untuk aksi Submit Deposit telah dialihkan ke field Qty (input-deposit-qty).
+3. Modul KAS dipaksa menarik 'valueAsDate' ke dalam format realtime untuk mem-bypass error 00:00 Firestore.
 =========================================================
 */
 
@@ -12,7 +12,6 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebas
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import { getFirestore, doc, setDoc, deleteDoc, getDoc, updateDoc, collection, query, orderBy, limit, onSnapshot, writeBatch, serverTimestamp, increment } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-// Konfigurasi Firebase Anda
 const firebaseConfig = {
     apiKey: "AIzaSyCnHKhINwZgnon4O0WPfdiYpb9tK118jTY",
     authDomain: "pb-batu-bertulis-1.firebaseapp.com",
@@ -32,15 +31,51 @@ try {
     alert("Sistem gagal terhubung ke database. Coba muat ulang halaman.");
 }
 
-// Global State
 let currentUser = null;
 let allMembers = [];
 let currentCockPrice = 3000;
 
 // ==========================================
-// [MENTOR NOTE] CORE SYSTEM: ASYNC CUSTOM DIALOG
-// Dibuat sebagai Promise untuk menggantikan alert(), confirm(), prompt()
+// 1. HELPER FUNCTIONS
 // ==========================================
+
+// Koreksi Waktu Kalender
+function processRealtimeDate(dateString) {
+    if (!dateString) return serverTimestamp(); 
+    const d = new Date(dateString);
+    const now = new Date();
+    d.setHours(now.getHours(), now.getMinutes(), now.getSeconds(), 0);
+    return d;
+}
+
+// Sistem Two-Way Binding Deposit (Kunci Anti-Pecahan)
+function bindDepositInputs(qtyId, nomId) {
+    const elQty = document.getElementById(qtyId);
+    const elNom = document.getElementById(nomId);
+    if (!elQty || !elNom) return;
+
+    // Ketik Qty -> Isi Nominal
+    elQty.addEventListener('input', (e) => {
+        const q = parseInt(e.target.value) || 0;
+        elNom.value = q > 0 ? (q * currentCockPrice) : '';
+    });
+
+    // Ketik Nominal -> Isi Qty (Otomatis pembulatan lantai)
+    elNom.addEventListener('input', (e) => {
+        const amt = parseInt(e.target.value) || 0;
+        const calcQty = Math.floor(amt / currentCockPrice);
+        elQty.value = calcQty > 0 ? calcQty : '';
+    });
+
+    // Lepas Fokus dari Nominal -> Koreksi String Nominal ke angka genap kok
+    elNom.addEventListener('blur', (e) => {
+        const amt = parseInt(e.target.value) || 0;
+        const correctQty = Math.floor(amt / currentCockPrice);
+        elNom.value = correctQty > 0 ? (correctQty * currentCockPrice) : '';
+    });
+}
+
+// Custom Asynchronous Dialog (Promise-based)
 window.appDialog = function(options) {
     return new Promise((resolve) => {
         const modal = document.getElementById('custom-dialog');
@@ -56,14 +91,12 @@ window.appDialog = function(options) {
 
         if(!modal) return resolve(options.type === 'confirm' ? confirm(options.message) : (options.type === 'prompt' ? prompt(options.message) : alert(options.message)));
 
-        // Reset state
         inputContainer.classList.add('hidden');
         btnCancel.classList.add('hidden');
         input.value = options.inputValue || '';
         title.innerText = options.title || 'Informasi';
         message.innerText = options.message || '';
 
-        // Tema UI berdasarkan tipe
         let colorClass = 'bg-blue-100 text-blue-600';
         let svgPath = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />';
         btnConfirm.className = 'flex-1 py-3.5 text-white rounded-2xl font-bold text-xs uppercase tracking-widest shadow-lg active:scale-95 transition bg-blue-600 shadow-blue-200';
@@ -95,7 +128,6 @@ window.appDialog = function(options) {
         iconContainer.className = `mx-auto w-16 h-16 rounded-full flex items-center justify-center mb-4 ${colorClass}`;
         icon.innerHTML = svgPath;
 
-        // Animate in
         modal.classList.remove('hidden');
         setTimeout(() => {
             modal.classList.replace('opacity-0', 'opacity-100');
@@ -117,7 +149,7 @@ window.appDialog = function(options) {
 };
 
 // ==========================================
-// 1. UI & NAVIGASI GLOBAL
+// 2. UI GLOBAL NAVIGATION
 // ==========================================
 
 window.showTab = (id, btn) => {
@@ -129,7 +161,6 @@ window.showTab = (id, btn) => {
 };
 
 window.closeLogin = () => document.getElementById('modal-login').classList.add('hidden');
-
 const btnLoginTrigger = document.getElementById('btn-login-trigger');
 if(btnLoginTrigger) btnLoginTrigger.onclick = () => document.getElementById('modal-login').classList.remove('hidden');
 
@@ -143,7 +174,6 @@ if(btnDoLogin) {
             closeLogin();
             appDialog({title: 'Berhasil', message: 'Anda telah masuk ke sistem.', type: 'success'});
         } catch (err) {
-            console.error("Login gagal:", err);
             appDialog({title: 'Akses Ditolak', message: 'Sandi atau Email salah!', type: 'error'});
         }
     };
@@ -157,8 +187,7 @@ window.toggleFabMenu = () => {
     const icon = document.getElementById('icon-fab');
     const overlay = document.getElementById('fab-overlay');
     if(!menu || !icon || !overlay) return;
-    const isHidden = menu.classList.contains('hidden');
-    if(isHidden) {
+    if(menu.classList.contains('hidden')) {
         menu.classList.remove('hidden');
         overlay.classList.remove('hidden');
         void menu.offsetWidth;
@@ -180,10 +209,6 @@ window.toggleFabMenu = () => {
     }
 };
 
-// ==========================================
-// 2. AUTHENTICATION LISTENER
-// ==========================================
-
 onAuthStateChanged(auth, (user) => {
     currentUser = user;
     document.body.classList.toggle('is-admin', !!user);
@@ -201,15 +226,12 @@ onAuthStateChanged(auth, (user) => {
     }
 });
 
-
 // ==========================================
-// 3. REALTIME DATABASE LISTENERS
+// 3. FIREBASE REALTIME LISTENERS
 // ==========================================
 
-// Listener Anggota
 onSnapshot(collection(db, "members"), (snap) => {
     allMembers = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    
     const countEl = document.getElementById('display-member-count');
     if(countEl) countEl.innerText = allMembers.length + " Orang";
     
@@ -234,11 +256,9 @@ onSnapshot(collection(db, "members"), (snap) => {
     }
     const tekorEl = document.getElementById('display-total-tekor-nominal');
     if(tekorEl) tekorEl.innerText = "Rp " + (totalT * currentCockPrice).toLocaleString('id-ID');
-    
     renderAdminUI();
-}, (error) => { console.error("Error fetching members:", error); });
+});
 
-// Listener Log Kok (Dengan Limit)
 onSnapshot(query(collection(db, "shuttlecock_history"), orderBy("timestamp", "desc"), limit(30)), (snap) => {
     const list = document.getElementById('list-history');
     if(list) {
@@ -266,9 +286,8 @@ onSnapshot(query(collection(db, "shuttlecock_history"), orderBy("timestamp", "de
             </div>`;
         }).join('');
     }
-}, (error) => { console.error("Error fetching history:", error); });
+});
 
-// Listener Kas (Dengan Limit)
 onSnapshot(query(collection(db, "bku_transactions"), orderBy("timestamp", "desc"), limit(30)), (snap) => {
     const list = document.getElementById('list-bku');
     if(list) {
@@ -299,9 +318,8 @@ onSnapshot(query(collection(db, "bku_transactions"), orderBy("timestamp", "desc"
             </div>`;
         }).join('');
     }
-}, (error) => { console.error("Error fetching BKU:", error); });
+});
 
-// Listener Metadata & Keuangan Global
 onSnapshot(doc(db, "metadata", "stats"), (ds) => {
     if(ds.exists()) {
         const data = ds.data();
@@ -310,9 +328,7 @@ onSnapshot(doc(db, "metadata", "stats"), (ds) => {
         if(cockPriceEl) cockPriceEl.innerText = "@" + currentCockPrice.toLocaleString('id-ID') + " / KOK";
         
         const setPriceInput = document.getElementById('input-setting-price');
-        if(setPriceInput && setPriceInput.value === "") {
-            setPriceInput.value = currentCockPrice;
-        }
+        if(setPriceInput && setPriceInput.value === "") setPriceInput.value = currentCockPrice;
         
         const bkuTotalEl = document.getElementById('display-bku-total');
         if(bkuTotalEl) bkuTotalEl.innerText = "Rp " + (data.total_balance_bku || 0).toLocaleString('id-ID'); 
@@ -323,24 +339,20 @@ onSnapshot(doc(db, "metadata", "stats"), (ds) => {
         const bkuExpenseEl = document.getElementById('display-bku-expense');
         if(bkuExpenseEl) bkuExpenseEl.innerText = "Rp " + (data.total_expense_bku || 0).toLocaleString('id-ID');
     }
-}, (error) => { console.error("Error fetching stats:", error); });
+});
 
 // ==========================================
-// 4. FUNGSI ADMIN & MANAJEMEN DATA
+// 4. ACTION FUNCTIONS (CRUD ADMIN)
 // ==========================================
 
 window.actionSaveSettings = async () => {
-    if (!currentUser) return appDialog({title: 'Ditolak', message: 'Akses Ditolak! Hanya Admin.', type: 'error'});
+    if (!currentUser) return appDialog({title: 'Ditolak', message: 'Hanya Admin.', type: 'error'});
     const newPrice = parseInt(document.getElementById('input-setting-price').value);
     if(isNaN(newPrice) || newPrice <= 0) return appDialog({title: 'Peringatan', message: 'Harga tidak valid!', type: 'warning'});
-    
     try {
         await updateDoc(doc(db, "metadata", "stats"), { shuttlecock_price: newPrice });
-        appDialog({title: 'Sukses', message: 'Harga kok berhasil diperbarui!', type: 'success'});
-    } catch (e) {
-        console.error("Gagal simpan setting:", e);
-        appDialog({title: 'Error', message: e.message, type: 'error'});
-    }
+        appDialog({title: 'Sukses', message: 'Harga kok diperbarui!', type: 'success'});
+    } catch (e) { appDialog({title: 'Error', message: e.message, type: 'error'}); }
 };
 
 function renderAdminUI() {
@@ -369,7 +381,7 @@ window.updateUsagePreview = () => {
     previewArea.innerHTML = `<span class="text-[11px] font-bold text-rose-600 leading-relaxed">${names.join(', ').toUpperCase()}</span>`;
 };
 
-// Modals Anggota
+// [A] Modals Anggota
 window.openAddMemberModal = () => document.getElementById('modal-add-member').classList.remove('hidden');
 window.closeAddMemberModal = () => {
     document.getElementById('modal-add-member').classList.add('hidden');
@@ -377,22 +389,15 @@ window.closeAddMemberModal = () => {
 };
 
 window.actionAddMember = async () => {
-    if (!currentUser) return appDialog({title: 'Ditolak', message: 'Akses Ditolak! Hanya Admin.', type: 'error'});
+    if (!currentUser) return;
     const i = document.getElementById('input-new-member'); 
     if(!i.value) return;
     try {
-        await setDoc(doc(db, "members", Date.now().toString()), { 
-            name: i.value.toUpperCase(), 
-            shuttlecock_balance: 0, 
-            created_at: serverTimestamp() 
-        });
+        await setDoc(doc(db, "members", Date.now().toString()), { name: i.value.toUpperCase(), shuttlecock_balance: 0, created_at: serverTimestamp() });
         closeAddMemberModal();
         showTab('tab-members', document.querySelectorAll('.nav-btn')[0]);
-        appDialog({title: 'Sukses', message: 'Anggota Berhasil Ditambahkan!', type: 'success'});
-    } catch (e) {
-        console.error("Gagal tambah anggota:", e);
-        appDialog({title: 'Error', message: e.message, type: 'error'});
-    }
+        appDialog({title: 'Sukses', message: 'Anggota Ditambahkan!', type: 'success'});
+    } catch (e) { appDialog({title: 'Error', message: e.message, type: 'error'}); }
 };
 
 window.openMemberProfile = (id) => {
@@ -402,8 +407,11 @@ window.openMemberProfile = (id) => {
     document.getElementById('profile-member-id').value = m.id;
     document.getElementById('profile-name').innerText = m.name;
     document.getElementById('profile-balance').innerText = `${m.shuttlecock_balance} Kok`;
-    document.getElementById('input-deposit-amount').value = "";
-    document.getElementById('deposit-calc').innerText = "Rp 0";
+    
+    // Clear the Two-Way Input form
+    document.getElementById('input-deposit-qty').value = "";
+    document.getElementById('input-deposit-nominal').value = "";
+    
     document.getElementById('modal-member-profile').classList.remove('hidden');
 };
 window.closeMemberProfile = () => document.getElementById('modal-member-profile').classList.add('hidden');
@@ -415,86 +423,68 @@ window.triggerEditName = () => {
 };
 
 window.adminEditMemberName = async (id, old) => {
-    if (!currentUser) return appDialog({title: 'Ditolak', message: 'Akses Ditolak! Hanya Admin.', type: 'error'});
+    if (!currentUser) return;
     const n = await appDialog({title: 'Ubah Nama', message: 'Masukkan nama anggota baru:', type: 'prompt', inputValue: old});
     if(n && n !== old) {
         try {
             await updateDoc(doc(db, "members", id), { name: n.toUpperCase() });
             document.getElementById('profile-name').innerText = n.toUpperCase();
             appDialog({title: 'Berhasil', message: 'Nama anggota diperbarui.', type: 'success'});
-        } catch (e) {
-            console.error("Gagal edit nama:", e);
-            appDialog({title: 'Error', message: e.message, type: 'error'});
-        }
+        } catch (e) { appDialog({title: 'Error', message: e.message, type: 'error'}); }
     }
 };
 
-// Transaksi Deposit
+// [B] Transaksi Deposit
 window.openGlobalDepositModal = () => document.getElementById('modal-global-deposit').classList.remove('hidden');
 window.closeGlobalDepositModal = () => {
     document.getElementById('modal-global-deposit').classList.add('hidden');
-    document.getElementById('input-global-deposit-amount').value = "";
-    document.getElementById('global-deposit-calc').innerText = "Rp 0";
+    document.getElementById('input-global-deposit-qty').value = "";
+    document.getElementById('input-global-deposit-nominal').value = "";
     document.getElementById('select-global-deposit-member').value = "";
 };
 
-const elGlobalDepositAmount = document.getElementById('input-global-deposit-amount');
-if(elGlobalDepositAmount) {
-    elGlobalDepositAmount.oninput = (e) => {
-        document.getElementById('global-deposit-calc').innerText = "Rp " + ((parseInt(e.target.value) || 0) * currentCockPrice).toLocaleString('id-ID');
-    };
-}
-
-const elDepositAmount = document.getElementById('input-deposit-amount');
-if(elDepositAmount) {
-    elDepositAmount.oninput = (e) => {
-        document.getElementById('deposit-calc').innerText = "Rp " + ((parseInt(e.target.value) || 0) * currentCockPrice).toLocaleString('id-ID');
-    };
-}
-
-async function performDepositLogic(id, n, amt, modalCloseFn) {
-    const cost = amt * currentCockPrice; 
+async function performDepositLogic(id, n, qty, modalCloseFn) {
+    const cost = qty * currentCockPrice; 
     try {
         const b = writeBatch(db);
         const historyRef = doc(collection(db, "shuttlecock_history"));
         const bkuRef = doc(collection(db, "bku_transactions"));
         
-        b.update(doc(db, "members", id), { shuttlecock_balance: increment(amt) });
-        b.set(historyRef, { member_id: id, member_name: n, type: "DEPOSIT", amount: amt, note: "Deposit " + n, linked_bku_id: bkuRef.id, timestamp: serverTimestamp() });
+        b.update(doc(db, "members", id), { shuttlecock_balance: increment(qty) });
+        b.set(historyRef, { member_id: id, member_name: n, type: "DEPOSIT", amount: qty, note: "Deposit " + n, linked_bku_id: bkuRef.id, timestamp: serverTimestamp() });
         b.set(bkuRef, { type: "DEBIT", category: "DEPOSIT KOK", amount: cost, note: "Deposit " + n, linked_history_id: historyRef.id, timestamp: serverTimestamp() });
         b.update(doc(db, "metadata", "stats"), { total_balance_bku: increment(cost), total_income_bku: increment(cost) });
     
         await b.commit(); 
         modalCloseFn();
         showTab('tab-members', document.querySelectorAll('.nav-btn')[0]);
-        appDialog({title: 'Berhasil', message: 'Deposit kok tercatat secara sistem!', type: 'success'}); 
-    } catch (e) {
-        console.error("Gagal deposit:", e);
-        appDialog({title: 'Error', message: e.message, type: 'error'});
-    }
+        appDialog({title: 'Berhasil', message: `Deposit ${qty} Kok tercatat!`, type: 'success'}); 
+    } catch (e) { appDialog({title: 'Error', message: e.message, type: 'error'}); }
 }
 
 window.actionSubmitGlobalDeposit = async () => {
-    if (!currentUser) return appDialog({title: 'Ditolak', message: 'Akses Ditolak!', type: 'error'});
+    if (!currentUser) return;
     const md = document.getElementById('select-global-deposit-member').value;
-    const amt = parseInt(document.getElementById('input-global-deposit-amount').value);
+    // MENTOR NOTE: Diambil dari ID field Quantity, BUKAN nominal.
+    const qty = parseInt(document.getElementById('input-global-deposit-qty').value);
     
-    if(!md || isNaN(amt) || amt <= 0) return appDialog({title: 'Peringatan', message: 'Input tidak valid!', type: 'warning'});
+    if(!md || isNaN(qty) || qty <= 0) return appDialog({title: 'Peringatan', message: 'Input jumlah kok tidak valid!', type: 'warning'});
     const [id, n] = md.split('|'); 
-    await performDepositLogic(id, n, amt, closeGlobalDepositModal);
+    await performDepositLogic(id, n, qty, closeGlobalDepositModal);
 };
 
 window.actionSubmitDeposit = async () => {
-    if (!currentUser) return appDialog({title: 'Ditolak', message: 'Akses Ditolak!', type: 'error'});
+    if (!currentUser) return;
     const id = document.getElementById('profile-member-id').value;
     const n = document.getElementById('profile-name').innerText;
-    const amt = parseInt(document.getElementById('input-deposit-amount').value);
+    // MENTOR NOTE: Diambil dari ID field Quantity.
+    const qty = parseInt(document.getElementById('input-deposit-qty').value);
     
-    if(!id || isNaN(amt) || amt <= 0) return appDialog({title: 'Peringatan', message: 'Input nominal kok tidak valid!', type: 'warning'});
-    await performDepositLogic(id, n, amt, closeMemberProfile);
+    if(!id || isNaN(qty) || qty <= 0) return appDialog({title: 'Peringatan', message: 'Input jumlah kok tidak valid!', type: 'warning'});
+    await performDepositLogic(id, n, qty, closeMemberProfile);
 };
 
-// Transaksi Pemakaian (Usage)
+// [C] Transaksi Pemakaian (Usage)
 window.openUsageModal = () => {
     const dateInput = document.getElementById('input-usage-date');
     if(dateInput) dateInput.valueAsDate = new Date();
@@ -512,48 +502,38 @@ window.closeUsageModal = () => {
 };
 
 window.actionSubmitUsage = async () => {
-    if (!currentUser) return appDialog({title: 'Ditolak', message: 'Akses Ditolak!', type: 'error'});
-    
+    if (!currentUser) return;
     const sel = Array.from(document.querySelectorAll('input[name="usage-member"]:checked'));
     const amt = parseInt(document.getElementById('input-usage-amount').value);
     const dv = document.getElementById('input-usage-date').value;
     
-    if(!sel.length || isNaN(amt) || !dv) return appDialog({title: 'Peringatan', message: 'Pilih pemain dan lengkapi data!', type: 'warning'});
+    if(!sel.length || isNaN(amt) || !dv) return appDialog({title: 'Peringatan', message: 'Pilih pemain & tanggal!', type: 'warning'});
     try {
         const b = writeBatch(db); 
-        
-        // [MENTOR NOTE] Logika perbaikan waktu: 
-        // Tangkap tanggal dari input, lalu sinkronkan Jam/Menit/Detik dengan waktu Realtime saat ini.
-        const td = new Date(dv); 
-        const now = new Date();
-        td.setHours(now.getHours(), now.getMinutes(), now.getSeconds(), 0);
+        const td = processRealtimeDate(dv); 
         
         sel.forEach(el => {
             const [id, n] = el.value.split('|');
             b.update(doc(db, "members", id), { shuttlecock_balance: increment(-amt) });
             b.set(doc(collection(db, "shuttlecock_history")), { 
-                member_id: id, 
-                member_name: n, 
-                type: "USAGE", 
-                amount: -amt, 
-                note: document.getElementById('input-usage-note').value || "Bermain", 
-                timestamp: td 
+                member_id: id, member_name: n, type: "USAGE", amount: -amt, note: document.getElementById('input-usage-note').value || "Bermain", timestamp: td 
             });
         });
         
         await b.commit(); 
-        sel.forEach(c => c.checked = false);
         closeUsageModal();
         showTab('tab-history', document.querySelectorAll('.nav-btn')[1]);
         appDialog({title: 'Berhasil', message: 'Data Pemakaian Tersimpan!', type: 'success'}); 
-    } catch (e) {
-        console.error("Gagal catat pemakaian:", e);
-        appDialog({title: 'Error', message: e.message, type: 'error'});
-    }
+    } catch (e) { appDialog({title: 'Error', message: e.message, type: 'error'}); }
 };
 
-// Manajemen KAS (BKU)
-window.openKasModal = () => document.getElementById('modal-kas').classList.remove('hidden');
+// [D] Manajemen KAS (BKU)
+window.openKasModal = () => {
+    // MENTOR NOTE: Menarik tanggal default ke kalender lokal client
+    document.getElementById('input-income-date').valueAsDate = new Date();
+    document.getElementById('input-expense-date').valueAsDate = new Date();
+    document.getElementById('modal-kas').classList.remove('hidden');
+}
 window.closeKasModal = () => {
     document.getElementById('modal-kas').classList.add('hidden');
     switchKasTab('INCOME');
@@ -583,18 +563,21 @@ window.switchKasTab = (type) => {
 };
 
 window.actionSubmitIncome = async () => {
-    if (!currentUser) return appDialog({title: 'Ditolak', message: 'Akses Ditolak!', type: 'error'});
+    if (!currentUser) return;
+    // MENTOR NOTE: Date Capture Added
+    const dStr = document.getElementById('input-income-date').value;
     const c = document.getElementById('input-income-category').value;
     const amt = parseInt(document.getElementById('input-income-amount').value);
     const n = document.getElementById('input-income-note').value;
     
-    if (isNaN(amt) || amt <= 0) return appDialog({title: 'Peringatan', message: 'Nominal tidak valid!', type: 'warning'});
-    if (!n || n.trim() === "") return appDialog({title: 'Peringatan', message: 'Keterangan wajib diisi!', type: 'warning'});
+    if(!dStr) return appDialog({title: 'Peringatan', message: 'Tanggal Wajib Diisi!', type: 'warning'});
+    if(isNaN(amt) || amt <= 0) return appDialog({title: 'Peringatan', message: 'Nominal tidak valid!', type: 'warning'});
+    if(!n || n.trim() === "") return appDialog({title: 'Peringatan', message: 'Keterangan wajib diisi!', type: 'warning'});
     
     try {
         const b = writeBatch(db);
         b.set(doc(collection(db, "bku_transactions")), {
-            type: "DEBIT", category: c, amount: amt, note: n, timestamp: serverTimestamp()
+            type: "DEBIT", category: c, amount: amt, note: n, timestamp: processRealtimeDate(dStr)
         });
         b.update(doc(db, "metadata", "stats"), { 
             total_balance_bku: increment(amt), total_income_bku: increment(amt) 
@@ -604,23 +587,24 @@ window.actionSubmitIncome = async () => {
         closeKasModal();
         showTab('tab-bku', document.querySelectorAll('.nav-btn')[2]);
         appDialog({title: 'Berhasil', message: 'Pemasukan Kas Dicatat!', type: 'success'});
-    } catch (e) { 
-        console.error("Gagal mencatat pemasukan", e);
-        appDialog({title: 'Error', message: e.message, type: 'error'}); 
-    }
+    } catch (e) { appDialog({title: 'Error', message: e.message, type: 'error'}); }
 };
 
 window.actionSubmitExpense = async () => {
-    if (!currentUser) return appDialog({title: 'Ditolak', message: 'Akses Ditolak!', type: 'error'});
+    if (!currentUser) return;
+    // MENTOR NOTE: Date Capture Added
+    const dStr = document.getElementById('input-expense-date').value;
     const c = document.getElementById('input-expense-category').value;
     const amt = parseInt(document.getElementById('input-expense-amount').value);
     const n = document.getElementById('input-expense-note').value;
     
+    if(!dStr) return appDialog({title: 'Peringatan', message: 'Tanggal Wajib Diisi!', type: 'warning'});
     if(isNaN(amt) || amt <= 0) return appDialog({title: 'Peringatan', message: 'Cek nominal uang!', type: 'warning'});
+    
     try {
         const b = writeBatch(db);
         b.set(doc(collection(db, "bku_transactions")), { 
-            type: "CREDIT", category: c, amount: amt, note: n || "Operasional", timestamp: serverTimestamp() 
+            type: "CREDIT", category: c, amount: amt, note: n || "Operasional", timestamp: processRealtimeDate(dStr) 
         });
         b.update(doc(db, "metadata", "stats"), { 
             total_balance_bku: increment(-amt), total_expense_bku: increment(amt) 
@@ -630,33 +614,26 @@ window.actionSubmitExpense = async () => {
         closeKasModal();
         showTab('tab-bku', document.querySelectorAll('.nav-btn')[2]);
         appDialog({title: 'Berhasil', message: 'Pengeluaran Berhasil!', type: 'success'}); 
-    } catch(e) { 
-        console.error("Gagal input pengeluaran", e);
-        appDialog({title: 'Error', message: e.message, type: 'error'}); 
-    }
+    } catch(e) { appDialog({title: 'Error', message: e.message, type: 'error'}); }
 };
 
-// ==========================================
-// 5. UPDATE & DELETE KOREKSI (DENGAN PATCH DESYNC)
-// ==========================================
-
+// [E] UPDATE & DELETE TRANSAKSI
 window.closeEditModal = () => document.getElementById('modal-edit').classList.add('hidden');
-
 window.openEditTransaction = async (id, type) => {
     const col = type === 'HISTORY' ? 'shuttlecock_history' : 'bku_transactions';
     try {
         const s = await getDoc(doc(db, col, id)); 
         if(!s.exists()) return;
-        
         const d = s.data();
         if (type === 'BKU' && d.linked_history_id) {
-            appDialog({title: '⚠️ Proteksi Sistem', message: 'Akses Ditolak!\nIni adalah transaksi Deposit Kok. Silakan Edit transaksi ini melalui Tab LOG KOK.', type: 'error'});
+            appDialog({title: '⚠️ Proteksi Sistem', message: 'Ini transaksi Deposit Kok. Edit melalui Tab LOG KOK.', type: 'error'});
             return;
         }
         document.getElementById('edit-target-id').value = id;
         document.getElementById('edit-target-type').value = type;
         document.getElementById('edit-val-amount').value = Math.abs(d.amount);
         document.getElementById('edit-val-note').value = d.note || (d.type === 'DEPOSIT' ? "Deposit " + d.member_name : "");
+        
         const label = document.getElementById('edit-label-amount');
         const calcArea = document.getElementById('edit-calc-display');
         const contextBox = document.getElementById('edit-context-box');
@@ -667,51 +644,39 @@ window.openEditTransaction = async (id, type) => {
             calcArea.classList.remove('hidden');
             contextBox.classList.remove('hidden');
             contextText.innerText = `👤 Member: ${d.member_name}`;
-            updateEditLiveNominal(Math.abs(d.amount));
+            document.getElementById('edit-live-nominal').innerText = "Rp " + (Math.abs(d.amount) * currentCockPrice).toLocaleString('id-ID');
         } else {
             label.innerText = "Nominal Rupiah Baru";
             calcArea.classList.add('hidden');
             contextBox.classList.remove('hidden');
             contextText.innerText = `📂 Transaksi Kas: ${d.category}`;
         }
-        document.getElementById('edit-modal-title').innerText = "Koreksi " + (type==='HISTORY' ? 'Stok' : 'Kas');
         document.getElementById('modal-edit').classList.remove('hidden');
-    } catch (e) {
-        console.error("Gagal memuat data edisi:", e);
-        alert(e.message);
-    }
+    } catch (e) { alert(e.message); }
 };
-
-function updateEditLiveNominal(qty) {
-    const val = parseInt(qty) || 0;
-    document.getElementById('edit-live-nominal').innerText = "Rp " + (val * currentCockPrice).toLocaleString('id-ID');
-}
 
 const elEditValAmount = document.getElementById('edit-val-amount');
 if(elEditValAmount) {
     elEditValAmount.oninput = (e) => {
         if(document.getElementById('edit-target-type').value === 'HISTORY') {
-            updateEditLiveNominal(e.target.value);
+            document.getElementById('edit-live-nominal').innerText = "Rp " + ((parseInt(e.target.value)||0) * currentCockPrice).toLocaleString('id-ID');
         }
     };
 }
 
-// [MENTOR NOTE: PATCH DESYNC UPDATED]
 window.processUpdateTransaction = async () => {
-    if (!currentUser) return appDialog({title: 'Ditolak', message: 'Akses Ditolak!', type: 'error'});
+    if (!currentUser) return;
     const id = document.getElementById('edit-target-id').value;
     const type = document.getElementById('edit-target-type').value;
     const nA = parseInt(document.getElementById('edit-val-amount').value);
     const nN = document.getElementById('edit-val-note').value;
     
     if(isNaN(nA)) return;
-    
     try {
         const col = type === 'HISTORY' ? 'shuttlecock_history' : 'bku_transactions';
         const s = await getDoc(doc(db, col, id)); 
-        if(!s.exists()) return appDialog({title: 'Error', message: 'Data sudah tidak ada!', type: 'error'});
+        if(!s.exists()) return;
         const d = s.data();
-        
         const b = writeBatch(db);
         
         if(type === 'HISTORY') {
@@ -721,13 +686,11 @@ window.processUpdateTransaction = async () => {
             
             if(d.type === 'DEPOSIT') {
                 if (d.linked_bku_id) {
-                    // Ambil cost masa lalu dari BKU, lalu selisihkan dengan cost masa depan
                     const bkuSnap = await getDoc(doc(db, "bku_transactions", d.linked_bku_id));
                     if(bkuSnap.exists()) {
                         const oldCost = bkuSnap.data().amount; 
                         const newCost = nA * currentCockPrice; 
                         const deltaCost = newCost - oldCost; 
-                        
                         b.update(doc(db, "metadata", "stats"), { total_balance_bku: increment(deltaCost), total_income_bku: increment(deltaCost) });
                         b.update(doc(db, "bku_transactions", d.linked_bku_id), { amount: newCost, note: nN });
                     }
@@ -738,7 +701,6 @@ window.processUpdateTransaction = async () => {
             }
             b.update(doc(db, col, id), { amount: actN, note: nN });
         } else {
-            // Edit BKU Biasa (Non Deposit)
             const delta = nA - d.amount;
             if (d.type === 'DEBIT') {
                 b.update(doc(db, "metadata", "stats"), { total_balance_bku: increment(delta), total_income_bku: increment(delta) });
@@ -749,29 +711,20 @@ window.processUpdateTransaction = async () => {
         }
         await b.commit();
         closeEditModal();
-        appDialog({title: 'Berhasil', message: 'Update berhasil secara menyeluruh!', type: 'success'});
-    } catch (e) { 
-        console.error("Gagal update:", e);
-        appDialog({title: 'Error', message: e.message, type: 'error'}); 
-    }
+        appDialog({title: 'Berhasil', message: 'Koreksi berhasil!', type: 'success'});
+    } catch (e) { appDialog({title: 'Error', message: e.message, type: 'error'}); }
 };
 
-// [MENTOR NOTE: PATCH DESYNC DELETE]
 window.adminDeleteShuttlecock = async (id, type) => {
-    if (!currentUser) return appDialog({title: 'Ditolak', message: 'Akses Ditolak!', type: 'error'});
-    
-    // Ganti native confirm dengan Custom Dialog
-    const confirmed = await appDialog({title: 'Konfirmasi Hapus', message: 'Hapus data log ini? Saldo anggota (dan kas jika deposit) akan dibalikkan.', type: 'confirm'});
+    if (!currentUser) return;
+    const confirmed = await appDialog({title: 'Konfirmasi Hapus', message: 'Hapus data log ini?', type: 'confirm'});
     if(!confirmed) return;
-    
     try {
         const s = await getDoc(doc(db, "shuttlecock_history", id)); 
         if(!s.exists()) return;
         const d = s.data();
         const b = writeBatch(db);
-        
         b.update(doc(db, "members", d.member_id), { shuttlecock_balance: increment(-d.amount) });
-        
         if(type==='DEPOSIT') {
             if (d.linked_bku_id) {
                 const bkuSnap = await getDoc(doc(db, "bku_transactions", d.linked_bku_id));
@@ -788,28 +741,21 @@ window.adminDeleteShuttlecock = async (id, type) => {
         b.delete(doc(db, "shuttlecock_history", id)); 
         await b.commit();
         appDialog({title: 'Terhapus', message: 'Log berhasil dihapus!', type: 'success'});
-    } catch (e) { 
-        console.error("Gagal delete:", e);
-        appDialog({title: 'Error', message: e.message, type: 'error'}); 
-    }
+    } catch (e) { appDialog({title: 'Error', message: e.message, type: 'error'}); }
 };
 
 window.adminDeleteBKU = async (id) => {
-    if (!currentUser) return appDialog({title: 'Ditolak', message: 'Akses Ditolak!', type: 'error'});
-    
+    if (!currentUser) return;
     try {
         const s = await getDoc(doc(db, "bku_transactions", id)); 
         if(!s.exists()) return;
         const d = s.data();
-        
         if (d.linked_history_id) {
-            appDialog({title: '⚠️ Proteksi Sistem', message: 'Akses Ditolak!\nIni adalah deposit. Silakan Hapus transaksi ini melalui Tab LOG KOK agar saldo Kok Member ikut disesuaikan otomatis.', type: 'error'});
+            appDialog({title: '⚠️ Proteksi', message: 'Hapus deposit ini melalui Tab LOG KOK.', type: 'error'});
             return;
         }
-        
-        const confirmed = await appDialog({title: 'Konfirmasi Hapus', message: 'Hapus data kas ini? Saldo BKU akan disesuaikan kembali.', type: 'confirm'});
+        const confirmed = await appDialog({title: 'Konfirmasi Hapus', message: 'Hapus data kas ini?', type: 'confirm'});
         if(!confirmed) return;
-        
         const b = writeBatch(db);
         if (d.type === 'DEBIT') {
             b.update(doc(db, "metadata", "stats"), { total_balance_bku: increment(-d.amount), total_income_bku: increment(-d.amount) });
@@ -819,8 +765,13 @@ window.adminDeleteBKU = async (id) => {
         b.delete(doc(db, "bku_transactions", id)); 
         await b.commit();
         appDialog({title: 'Terhapus', message: 'Data kas berhasil dihapus!', type: 'success'});
-    } catch (e) { 
-        console.error("Gagal hapus kas:", e);
-        appDialog({title: 'Error', message: e.message, type: 'error'}); 
-    }
+    } catch (e) { appDialog({title: 'Error', message: e.message, type: 'error'}); }
 };
+
+// ==========================================
+// 5. INISIALISASI
+// ==========================================
+document.addEventListener('DOMContentLoaded', () => {
+    bindDepositInputs('input-deposit-qty', 'input-deposit-nominal');
+    bindDepositInputs('input-global-deposit-qty', 'input-global-deposit-nominal');
+});

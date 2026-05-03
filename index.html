@@ -4,11 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>PB. Batu Betulis App</title>
-    <!-- Menambahkan Favicon Firebase -->
     <link rel="icon" href="https://firebase.google.com/favicon.ico" type="image/x-icon">
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Panggilan ke file CSS Eksternal (Lokal) -->
     <link rel="stylesheet" href="style.css">
 </head>
 <body class="bg-slate-50 text-slate-900 pb-28">
@@ -115,7 +112,7 @@
     <!-- Overlay Gelap untuk Menu FAB -->
     <div id="fab-overlay" onclick="toggleFabMenu()" class="hidden fixed inset-0 bg-slate-900/40 backdrop-blur-[2px] z-[45] transition-opacity duration-300 opacity-0"></div>
 
-    <!-- Bottom Navigation (Dengan Central Floating Action Button) -->
+    <!-- Bottom Navigation -->
     <nav class="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t border-slate-100 px-2 pt-2 pb-4 flex justify-around items-end z-50">
         
         <button onclick="showTab('tab-members', this)" class="nav-btn flex flex-col items-center gap-1 bottom-nav-active transition active:scale-90 w-16">
@@ -130,15 +127,11 @@
 
         <!-- BIG CENTRAL FAB (ACTION SHEET - ADMIN ONLY) -->
         <div class="admin-only flex justify-center relative w-16">
-            
-            <!-- Floating Action Menu Premium -->
             <div id="fab-menu" class="hidden absolute bottom-20 left-1/2 -translate-x-1/2 w-[80vw] max-w-[300px] bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl border border-slate-100 p-2.5 flex flex-col z-[60] origin-bottom opacity-0 scale-95 translate-y-4 transition-all duration-300">
-                <!-- Header Card -->
                 <div class="px-3 py-2 border-b border-slate-100 mb-1.5">
                     <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest text-center">Menu Aksi Cepat</p>
                 </div>
                 
-                <!-- Items -->
                 <button onclick="openAddMemberModal(); toggleFabMenu();" class="flex items-center gap-3 w-full p-2.5 hover:bg-slate-50 rounded-2xl text-left active:scale-95 transition group">
                     <div class="w-10 h-10 rounded-xl bg-slate-100 text-slate-500 group-hover:bg-slate-200 group-hover:text-slate-800 flex items-center justify-center transition shrink-0">
                         <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/></svg>
@@ -187,7 +180,6 @@
                     </svg>
                 </button>
             </div>
-            <!-- Invisible Spacer -->
             <div class="h-10"></div>
         </div>
 
@@ -230,11 +222,9 @@
         </div>
     </div>
 
-    <!-- MODAL 2: Unified Profil Modal -->
+    <!-- MODAL 2: Unified Profil Modal (Deposit 2 Input) -->
     <div id="modal-member-profile" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[110]">
         <div class="bg-white w-full max-w-md rounded-[32px] p-8 animate-slide-up shadow-2xl relative">
-            
-            <!-- Profil Header -->
             <div class="flex justify-between items-start mb-6">
                 <div class="flex-1 pr-4">
                     <div class="flex items-center gap-2 mb-1">
@@ -251,15 +241,16 @@
                 </div>
             </div>
 
-            <!-- Area Input Deposit -->
+            <!-- Area Input Deposit Two-Way -->
             <div class="p-4 bg-emerald-50 rounded-3xl mb-6 border border-emerald-100">
                 <h3 class="text-[10px] font-black text-emerald-700 uppercase tracking-widest mb-3 ml-2">Tambah Deposit Kok</h3>
                 <input type="hidden" id="profile-member-id">
-                <input type="number" id="input-deposit-amount" placeholder="Input Jumlah Kok (Bh)" class="w-full bg-white p-4 rounded-2xl border-none text-sm font-bold focus:ring-2 focus:ring-emerald-500 mb-2 shadow-sm">
-                <div class="flex justify-between items-center px-2 py-1 mb-3">
-                    <span class="text-[10px] font-bold text-emerald-800 uppercase opacity-60">Total Tagihan:</span>
-                    <span id="deposit-calc" class="font-black text-emerald-700">Rp 0</span>
+                
+                <div class="flex gap-2 mb-4">
+                    <input type="number" id="input-deposit-qty" placeholder="Jml Kok" class="w-1/3 bg-white p-4 rounded-2xl border-none text-sm font-bold focus:ring-2 focus:ring-emerald-500 text-center text-emerald-700 shadow-sm">
+                    <input type="number" id="input-deposit-nominal" placeholder="Nominal (Rp)" class="w-2/3 bg-white p-4 rounded-2xl border-none text-sm font-bold focus:ring-2 focus:ring-emerald-500 text-slate-700 shadow-sm">
                 </div>
+                
                 <button onclick="actionSubmitDeposit()" class="w-full bg-emerald-600 text-white py-3.5 rounded-2xl font-bold active:scale-95 transition shadow-lg shadow-emerald-200 uppercase text-xs tracking-widest">Proses Deposit</button>
             </div>
             
@@ -267,19 +258,20 @@
         </div>
     </div>
 
-    <!-- MODAL 3: Global Deposit Kok (Bypass) -->
+    <!-- MODAL 3: Global Deposit Kok (Bypass 2 Input) -->
     <div id="modal-global-deposit" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[110]">
         <div class="bg-white w-full max-w-md rounded-[32px] p-8 animate-slide-up shadow-2xl relative">
             <h2 class="text-xl font-bold mb-1 uppercase tracking-tight text-emerald-800 text-center">Deposit Kok</h2>
             <p class="text-slate-400 text-[10px] mb-6 font-bold uppercase tracking-widest italic text-center">Penambahan Saldo Anggota</p>
             <div class="space-y-4 mb-4">
                 <select id="select-global-deposit-member" class="w-full bg-slate-50 p-4 rounded-2xl border-none text-sm font-semibold"></select>
-                <input type="number" id="input-global-deposit-amount" placeholder="Jumlah Kok" class="w-full bg-slate-50 p-4 rounded-2xl border-none text-sm font-bold focus:ring-2 focus:ring-emerald-500">
-                <div class="flex justify-between items-center p-4 bg-emerald-50 rounded-2xl">
-                    <span class="text-[10px] font-bold text-emerald-800 uppercase">Total Nominal:</span>
-                    <span id="global-deposit-calc" class="font-black text-emerald-700">Rp 0</span>
+                
+                <div class="flex gap-2">
+                    <input type="number" id="input-global-deposit-qty" placeholder="Jml Kok" class="w-1/3 bg-slate-50 p-4 rounded-2xl border-none text-sm font-bold focus:ring-2 focus:ring-emerald-500 text-center text-emerald-700">
+                    <input type="number" id="input-global-deposit-nominal" placeholder="Nominal (Rp)" class="w-2/3 bg-slate-50 p-4 rounded-2xl border-none text-sm font-bold focus:ring-2 focus:ring-emerald-500 text-slate-700">
                 </div>
-                <button onclick="actionSubmitGlobalDeposit()" class="w-full bg-emerald-600 text-white py-4 rounded-2xl font-bold active:scale-95 transition shadow-lg shadow-emerald-100 uppercase text-xs tracking-widest">Proses Deposit</button>
+
+                <button onclick="actionSubmitGlobalDeposit()" class="w-full bg-emerald-600 text-white py-4 rounded-2xl font-bold active:scale-95 transition shadow-lg shadow-emerald-100 uppercase text-xs tracking-widest mt-2">Proses Deposit</button>
                 <button onclick="closeGlobalDepositModal()" class="w-full py-2 text-slate-400 font-bold text-xs uppercase tracking-widest">Batal</button>
             </div>
         </div>
@@ -297,7 +289,7 @@
                     <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 text-center">Pilih Pemain</p>
                     <div id="admin-multi-select" class="flex gap-3 overflow-x-auto no-scrollbar py-2 px-1 border-b border-slate-100 min-h-[60px] items-center"></div>
                     
-                    <div id="usage-preview-chips" class="min-h-[28px] mt-3 px-1">
+                    <div id="usage-preview-chips" class="min-h-[28px] mt-3 px-1 text-center">
                         <span class="text-[10px] font-bold text-slate-300 italic">Belum ada pemain terpilih</span>
                     </div>
                 </div>
@@ -319,12 +311,11 @@
         </div>
     </div>
 
-    <!-- MODAL 5: Catat Kas (BKU) dengan Pill Switch -->
+    <!-- MODAL 5: Catat Kas (BKU) - Penambahan Input Tanggal -->
     <div id="modal-kas" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[110]">
         <div class="bg-white w-full max-w-md rounded-[32px] p-8 animate-slide-up shadow-2xl relative">
             <h2 class="text-xl font-bold mb-4 uppercase tracking-tight text-slate-800 text-center">Catat Kas (BKU)</h2>
             
-            <!-- Pill Switch UI -->
             <div class="flex p-1 bg-slate-100 rounded-2xl mb-6">
                 <button onclick="switchKasTab('INCOME')" id="btn-kas-income" class="flex-1 py-3 text-[10px] font-black uppercase tracking-widest rounded-xl bg-white shadow-sm text-blue-600 transition">Pemasukan</button>
                 <button onclick="switchKasTab('EXPENSE')" id="btn-kas-expense" class="flex-1 py-3 text-[10px] font-black uppercase tracking-widest rounded-xl text-slate-400 transition hover:text-slate-600">Pengeluaran</button>
@@ -332,6 +323,7 @@
 
             <!-- Form Income (Pemasukan) -->
             <div id="form-income" class="space-y-3 mb-4">
+                <input type="date" id="input-income-date" class="w-full bg-slate-50 p-4 rounded-2xl border-none text-sm font-bold focus:ring-2 focus:ring-blue-500 text-slate-700">
                 <select id="input-income-category" class="w-full bg-slate-50 p-4 rounded-2xl border-none text-sm font-semibold">
                     <option value="DONASI / SUMBANGAN">DONASI / SUMBANGAN</option>
                     <option value="SPONSOR">SPONSOR</option>
@@ -344,6 +336,7 @@
 
             <!-- Form Expense (Pengeluaran) -->
             <div id="form-expense" class="hidden space-y-3 mb-4">
+                <input type="date" id="input-expense-date" class="w-full bg-slate-50 p-4 rounded-2xl border-none text-sm font-bold focus:ring-2 focus:ring-rose-500 text-slate-700">
                 <select id="input-expense-category" class="w-full bg-slate-50 p-4 rounded-2xl border-none text-sm font-semibold">
                     <option value="PEMBELIAN KOK">PEMBELIAN KOK</option>
                     <option value="LISTRIK">TOKEN LISTRIK</option>
@@ -359,7 +352,7 @@
         </div>
     </div>
 
-    <!-- Modal Edit Transaksi Historis BKU/LOG -->
+    <!-- Modal Edit Transaksi -->
     <div id="modal-edit" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[110]">
         <div class="bg-white w-full max-w-md rounded-[32px] p-8 animate-slide-up shadow-2xl relative">
             <h2 id="edit-modal-title" class="text-xl font-bold mb-1 uppercase tracking-tight text-emerald-800 text-center">Koreksi Data</h2>
@@ -390,7 +383,7 @@
         </div>
     </div>
 
-    <!-- Unified Custom Dialog Modal (Modern Popup) -->
+    <!-- Unified Custom Dialog Modal -->
     <div id="custom-dialog" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-[200] opacity-0 transition-opacity duration-300">
         <div class="bg-white w-full max-w-sm rounded-[32px] p-8 shadow-2xl transform scale-95 transition-transform duration-300" id="custom-dialog-box">
             <div id="dialog-icon-container" class="mx-auto w-16 h-16 rounded-full flex items-center justify-center mb-4 transition-colors duration-300">
@@ -408,7 +401,6 @@
         </div>
     </div>
 
-    <!-- PANGGILAN FILE JAVASCRIPT MODULE EKSTERNAL (Lokal) -->
     <script type="module" src="app.js"></script>
 </body>
 </html>
