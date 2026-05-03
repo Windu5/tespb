@@ -4,6 +4,7 @@ PB. BATU BETULIS - CORE APPLICATION LOGIC
 [MENTOR NOTE]
 1. Logika 'Two-Way Binding' telah dipasang cerdas (bisa menghitung dan menampilkan kembalian fisik).
 2. Jika Checkbox Donasi dicentang, Firebase Batch Write akan menembakkan DUA record BKU sekaligus tanpa mengotori Harga Dasar Kok.
+3. UI Render BKU telah diperbaiki: Tombol admin sejajar dengan tanggal, teks note dibebaskan agar bisa wrap (turun baris).
 =========================================================
 */
 
@@ -319,23 +320,25 @@ onSnapshot(query(collection(db, "bku_transactions"), orderBy("timestamp", "desc"
             const d = doc.data(); const isD = d.type === 'DEBIT';
             return `<div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-50 flex items-center gap-4">
                 <div class="p-2 rounded-xl ${isD ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'}">${isD ? '+' : '-'}</div>
-                <div class="flex-1">
-                    <div class="flex justify-between items-center mb-0.5">
+                <div class="flex-1 min-w-0">
+                    <div class="flex justify-between items-center mb-1">
                         <span class="text-[9px] font-black uppercase text-slate-400 tracking-wider">${d.category}</span>
-                        <span class="text-[9px] text-slate-300 font-bold">${d.timestamp?.toDate().toLocaleDateString('id-ID') || ''}</span>
-                    </div>
-                    <div class="flex justify-between items-end">
-                        <p class="text-xs font-semibold text-slate-700 italic line-clamp-1 max-w-[75%]">"${d.note}"</p>
-                        <div class="text-right flex items-center gap-2">
-                            <p class="font-black text-sm ${isD ? 'text-emerald-600' : 'text-rose-600'}">${isD ? '' : '-'}${formatRupiahInput(d.amount.toString())}</p>
+                        <div class="flex items-center gap-2">
+                            <span class="text-[9px] text-slate-300 font-bold">${d.timestamp?.toDate().toLocaleDateString('id-ID') || ''}</span>
                             <div class="admin-only flex gap-1">
                                 ${d.linked_history_id ? 
                                     `<span class="p-1 text-slate-300" title="Dikunci: Edit transaksi ini melalui Tab LOG KOK"><svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg></span>` 
                                     : 
-                                    `<button onclick="openEditTransaction('${doc.id}', 'BKU')" class="p-1 text-slate-200 hover:text-emerald-500 transition"><svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg></button>
-                                    <button onclick="adminDeleteBKU('${doc.id}')" class="p-1 text-slate-200 hover:text-rose-400 transition"><svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>`
+                                    `<button onclick="openEditTransaction('${doc.id}', 'BKU')" class="p-1 text-slate-300 hover:text-emerald-500 transition"><svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg></button>
+                                    <button onclick="adminDeleteBKU('${doc.id}')" class="p-1 text-slate-300 hover:text-rose-400 transition"><svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>`
                                 }
                             </div>
+                        </div>
+                    </div>
+                    <div class="flex justify-between items-end gap-3 mt-1">
+                        <p class="text-xs font-semibold text-slate-700 italic flex-1 break-words">"${d.note}"</p>
+                        <div class="text-right shrink-0">
+                            <p class="font-black text-sm ${isD ? 'text-emerald-600' : 'text-rose-600'}">${isD ? '' : '-'}${formatRupiahInput(d.amount.toString())}</p>
                         </div>
                     </div>
                 </div>
