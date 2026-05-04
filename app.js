@@ -10,7 +10,7 @@ PB. BATU BETULIS - CORE APPLICATION LOGIC
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-import { getFirestore, doc, setDoc, deleteDoc, getDoc, updateDoc, collection, query, orderBy, limit, onSnapshot, writeBatch, serverTimestamp, increment, getDocs, startAfter } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getFirestore, doc, setDoc, deleteDoc, getDoc, updateDoc, collection, query, orderBy, limit, onSnapshot, writeBatch, serverTimestamp, increment, getDocs, startAfter, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyCnHKhINwZgnon4O0WPfdiYpb9tK118jTY",
@@ -41,6 +41,10 @@ let bkuData = [];
 let lastVisibleHistory = null;
 let lastVisibleBKU = null;
 const FETCH_LIMIT = 15;
+
+// Profile State
+let currentProfileMemberId = null;
+let memberHistoryData = [];
 
 // ==========================================
 // 1. HELPER FUNCTIONS & FORMATTERS
@@ -328,13 +332,6 @@ function renderHistoryList() {
             ts = dateObj.toLocaleTimeString('id-ID', { hour:'2-digit', minute:'2-digit' });
         }
         const nom = Math.abs(d.amount) * currentCockPrice;
-        
-        const adminBtns = currentUser ? `
-            <div class="admin-only flex gap-1">
-                <button onclick="openEditTransaction('${d.id}', 'HISTORY')" class="p-1 text-slate-300 hover:text-emerald-600 transition"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg></button>
-                <button onclick="adminDeleteShuttlecock('${d.id}', '${d.type}')" class="p-1 text-slate-300 hover:text-rose-500 transition"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>
-            </div>
-        ` : '';
 
         return `<div class="bg-white p-4 rounded-2xl flex items-center gap-4 shadow-sm border border-slate-50 group transition active:bg-slate-50">
             <div class="w-10 h-10 rounded-xl flex items-center justify-center font-bold text-[10px] ${isU ? 'bg-rose-50 text-rose-600' : 'bg-emerald-50 text-emerald-600'}">${ds}</div>
@@ -343,10 +340,7 @@ function renderHistoryList() {
                 <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5 truncate">${ts} • ${d.note || 'Transaksi'}</p>
             </div>
             <div class="text-right flex flex-col items-end gap-0.5 shrink-0">
-                <div class="flex items-center gap-2">
-                    <p class="font-black text-sm ${isU ? 'text-rose-600' : 'text-emerald-600'}">${d.amount > 0 ? '+'+d.amount : d.amount} Kok</p>
-                    ${adminBtns}
-                </div>
+                <p class="font-black text-sm ${isU ? 'text-rose-600' : 'text-emerald-600'}">${d.amount > 0 ? '+'+d.amount : d.amount} Kok</p>
                 <p class="text-[10px] font-mono font-bold ${isU ? 'text-rose-400' : 'text-emerald-400'}">Rp ${formatRupiahInput(nom.toString())}</p>
             </div>
         </div>`;
@@ -556,9 +550,14 @@ window.openMemberProfile = (id) => {
     if (!currentUser) return;
     const m = allMembers.find(x => x.id === id);
     if (!m) return;
+    currentProfileMemberId = id;
     document.getElementById('profile-member-id').value = m.id;
     document.getElementById('profile-name').innerText = m.name;
     document.getElementById('profile-balance').innerText = `${m.shuttlecock_balance} Kok`;
+    
+    // Sembunyikan form deposit tiap kali profil dibuka (Reset State)
+    const formDep = document.getElementById('profile-deposit-form');
+    if (formDep) formDep.classList.add('hidden');
     
     document.getElementById('input-deposit-qty').value = "";
     document.getElementById('input-deposit-nominal').value = "";
@@ -567,9 +566,82 @@ window.openMemberProfile = (id) => {
     const chk = document.getElementById('check-donate-deposit');
     if(chk) chk.checked = false;
     
+    // Panggil riwayat khusus anggota ini
+    fetchMemberHistory(id);
+    
     document.getElementById('modal-member-profile').classList.remove('hidden');
 };
-window.closeMemberProfile = () => document.getElementById('modal-member-profile').classList.add('hidden');
+window.closeMemberProfile = () => {
+    currentProfileMemberId = null;
+    document.getElementById('modal-member-profile').classList.add('hidden');
+};
+
+// Logika UI: Toggle Form Deposit
+window.toggleProfileDepositForm = () => {
+    if (!currentUser) return; // Proteksi keamanan lapis dua (Backend JS)
+    const formDep = document.getElementById('profile-deposit-form');
+    if (formDep) formDep.classList.toggle('hidden');
+};
+
+window.fetchMemberHistory = async (id) => {
+    const list = document.getElementById('profile-history-list');
+    if(!list) return;
+    list.innerHTML = '<p class="text-center text-[10px] text-slate-400 mt-4 animate-pulse">Memuat riwayat...</p>';
+    
+    try {
+        const q = query(
+            collection(db, "shuttlecock_history"), 
+            where("member_id", "==", id), 
+            orderBy("timestamp", "desc"), 
+            limit(10)
+        );
+        const snap = await getDocs(q);
+        memberHistoryData = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        renderMemberHistoryList();
+    } catch (e) {
+        console.error("Butuh Index Firestore:", e);
+        list.innerHTML = `<p class="text-center text-[10px] text-rose-500 mt-4 font-bold">⚠️ Gagal Memuat Riwayat</p><p class="text-center text-[9px] text-slate-500 mt-1">Cek Inspect > Console Browser. Klik link biru/merah dari Firebase untuk membuat Index.</p>`;
+    }
+};
+
+function renderMemberHistoryList() {
+    const list = document.getElementById('profile-history-list');
+    if(memberHistoryData.length === 0) {
+        list.innerHTML = '<p class="text-center text-[10px] text-slate-400 mt-4 italic">Belum ada riwayat tercatat.</p>';
+        return;
+    }
+    
+    list.innerHTML = memberHistoryData.map(d => {
+        const isU = d.type === 'USAGE';
+        let ds = '-';
+        if (d.timestamp) {
+            const dateObj = d.timestamp.toDate ? d.timestamp.toDate() : new Date(d.timestamp);
+            ds = dateObj.toLocaleDateString('id-ID', { day:'numeric', month:'short' });
+        }
+        
+        // Tombol Edit/Hapus sekarang murni di dalam sini
+        const adminBtns = currentUser ? `
+            <div class="admin-only flex gap-1 mt-1 justify-end">
+                <button onclick="openEditTransaction('${d.id}', 'HISTORY')" class="p-1.5 bg-slate-100 rounded-lg text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 transition"><svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg></button>
+                <button onclick="adminDeleteShuttlecock('${d.id}', '${d.type}')" class="p-1.5 bg-slate-100 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-rose-50 transition"><svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>
+            </div>
+        ` : '';
+
+        return `<div class="bg-slate-50/50 p-3 rounded-xl border border-slate-100 flex items-center justify-between gap-3">
+            <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2">
+                    <span class="px-1.5 py-0.5 rounded text-[8px] font-black uppercase ${isU ? 'bg-rose-100 text-rose-600' : 'bg-emerald-100 text-emerald-600'}">${d.type}</span>
+                    <span class="text-[9px] font-bold text-slate-400">${ds}</span>
+                </div>
+                <p class="text-[10px] font-semibold text-slate-700 mt-1 truncate">${d.note || '-'}</p>
+            </div>
+            <div class="text-right shrink-0">
+                <p class="font-black text-xs ${isU ? 'text-rose-600' : 'text-emerald-600'}">${d.amount > 0 ? '+'+d.amount : d.amount} Kok</p>
+                ${adminBtns}
+            </div>
+        </div>`;
+    }).join('');
+}
 
 window.triggerEditName = () => {
     const id = document.getElementById('profile-member-id').value;
@@ -907,7 +979,10 @@ window.processUpdateTransaction = async () => {
         await b.commit();
         closeEditModal();
         
-        if(type === 'HISTORY') fetchHistory(false);
+        if(type === 'HISTORY') {
+            fetchHistory(false);
+            if(currentProfileMemberId) fetchMemberHistory(currentProfileMemberId);
+        }
         else fetchBKU(false);
 
         appDialog({title: 'Berhasil', message: 'Koreksi berhasil!', type: 'success'});
@@ -940,6 +1015,7 @@ window.adminDeleteShuttlecock = async (id, type) => {
         b.delete(doc(db, "shuttlecock_history", id)); 
         await b.commit();
         fetchHistory(false); 
+        if(currentProfileMemberId) fetchMemberHistory(currentProfileMemberId);
         appDialog({title: 'Terhapus', message: 'Log berhasil dihapus!', type: 'success'});
     } catch (e) { appDialog({title: 'Error', message: e.message, type: 'error'}); }
 };

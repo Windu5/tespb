@@ -190,49 +190,60 @@
             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
             <span class="text-[9px] font-black uppercase tracking-tighter">Kas</span>
         </button>
-        <button onclick="showTab('tab-settings', this)" class="nav-btn flex flex-col items-center gap-1 text-slate-400 transition active:scale-90 admin-only w-16">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-            <span class="text-[9px] font-black uppercase tracking-tighter">Setting</span>
-        </button>
-    </nav>
+    <!-- MODAL 2: Profil Anggota -->
+    <div id="modal-member-profile" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-[110]">
+        <div class="bg-white w-full max-w-md max-h-[90vh] overflow-y-auto no-scrollbar rounded-[32px] p-6 pb-8 animate-slide-up shadow-2xl relative">
+            <input type="hidden" id="profile-member-id">
+            
+            <!-- HEADER PROFIL -->
+            <div class="relative">
+                <button onclick="triggerEditName()" class="admin-only absolute right-0 top-0 p-2 text-slate-300 hover:text-emerald-600 transition" title="Edit Nama">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                </button>
+                <div class="text-center mb-6">
+                    <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Profil Anggota</p>
+                    <h3 id="profile-name" class="font-black text-xl text-slate-800 tracking-tight mt-1">NAMA</h3>
+                    <div class="flex items-center justify-center mt-1">
+                        <p id="profile-balance" class="text-sm font-bold text-slate-500 bg-slate-100 px-3 py-1 rounded-lg">0 Kok</p>
+                        
+                        <!-- TOMBOL TOGGLE TAMBAH DEPOSIT (BARU) -->
+                        <button onclick="toggleProfileDepositForm()" class="admin-only ml-2 bg-emerald-100 text-emerald-600 rounded-full w-7 h-7 flex items-center justify-center hover:bg-emerald-200 transition active:scale-95" title="Buka Form Tambah Deposit">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" /></svg>
+                        </button>
 
-    <!-- Modal Login & Tambah Member -->
-    <div id="modal-login" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100]">
-        <div class="bg-white w-full max-w-md rounded-[32px] p-8 animate-slide-up shadow-2xl text-center"><h2 class="text-2xl font-bold mb-1">Login Pengurus</h2><p class="text-slate-400 text-sm mb-8">PB. Batu Betulis Management System</p><div class="space-y-4 mb-10"><input type="email" id="login-email" placeholder="Email" class="w-full bg-slate-50 p-4 rounded-2xl border-none focus:ring-2 focus:ring-emerald-500"><input type="password" id="login-pass" placeholder="Password" class="w-full bg-slate-50 p-4 rounded-2xl border-none focus:ring-2 focus:ring-emerald-500"><button id="btn-do-login" class="w-full bg-emerald-700 text-white py-4 rounded-2xl font-bold active:scale-95 transition">MASUK</button><button onclick="closeLogin()" class="w-full py-2 text-slate-400 font-bold text-xs uppercase tracking-widest">Batal</button></div></div>
-    </div>
-    <div id="modal-add-member" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[110]">
-        <div class="bg-white w-full max-w-md rounded-[32px] p-8 animate-slide-up shadow-2xl relative"><h2 class="text-xl font-bold mb-1 uppercase tracking-tight text-slate-800 text-center">Anggota Baru</h2><p class="text-slate-400 text-[10px] mb-6 font-bold uppercase tracking-widest italic text-center">Pendaftaran Anggota Klub</p><div class="space-y-4 mb-4"><input type="text" id="input-new-member" placeholder="Nama Lengkap Anggota" class="w-full bg-slate-50 p-4 rounded-2xl border-none text-sm font-bold focus:ring-2 focus:ring-slate-800"><button onclick="actionAddMember()" class="w-full bg-slate-800 text-white py-4 rounded-2xl font-bold active:scale-95 transition shadow-lg shadow-slate-200 uppercase text-xs tracking-widest">Simpan Anggota</button><button onclick="closeAddMemberModal()" class="w-full py-2 text-slate-400 font-bold text-xs uppercase tracking-widest">Batal</button></div></div>
-    </div>
-
-    <!-- MODAL 2: Unified Profil Modal -->
-    <div id="modal-member-profile" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[110]">
-        <div class="bg-white w-full max-w-md rounded-[32px] p-8 animate-slide-up shadow-2xl relative">
-            <div class="flex justify-between items-start mb-6">
-                <div class="flex-1 pr-4">
-                    <div class="flex items-center gap-2 mb-1">
-                        <h2 id="profile-name" class="text-xl font-bold uppercase tracking-tight text-slate-800 truncate">Nama</h2>
-                        <button onclick="triggerEditName()" class="p-1.5 bg-slate-100 text-slate-500 rounded-lg active:scale-95 transition hover:text-emerald-600 flex-shrink-0" title="Edit Nama"><svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg></button>
                     </div>
-                    <p class="text-[10px] font-bold uppercase tracking-widest italic text-slate-400">Profil Anggota</p>
-                </div>
-                <div class="text-right flex-shrink-0">
-                    <p class="text-[9px] font-bold uppercase tracking-widest text-slate-400 mb-0.5">Sisa Saldo</p>
-                    <p id="profile-balance" class="text-lg font-black text-emerald-600">0 Kok</p>
                 </div>
             </div>
-            <div class="p-4 bg-emerald-50 rounded-3xl mb-6 border border-emerald-100">
-                <h3 class="text-[10px] font-black text-emerald-700 uppercase tracking-widest mb-3 ml-2">Tambah Deposit Kok</h3>
-                <input type="hidden" id="profile-member-id">
-                <div class="flex gap-2 mb-3">
-                    <input type="number" id="input-deposit-qty" placeholder="Jml Kok" class="w-1/3 bg-white p-4 rounded-2xl border-none text-sm font-bold focus:ring-2 focus:ring-emerald-500 text-center text-emerald-700 shadow-sm">
-                    <input type="text" inputmode="numeric" id="input-deposit-nominal" placeholder="Nominal Bayar (Rp)" class="w-2/3 bg-white p-4 rounded-2xl border-none text-sm font-bold focus:ring-2 focus:ring-emerald-500 text-slate-700 shadow-sm">
+
+            <!-- PEMBUNGKUS FORM DEPOSIT (HAPUS ADMIN-BLOCK DI SINI) -->
+            <div id="profile-deposit-form" class="hidden border-t border-slate-100 pt-4 mt-2 mb-4 transition-all">
+                <div class="flex justify-between items-center mb-3 px-1">
+                    <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Tambah Deposit</h3>
                 </div>
-                <div class="flex flex-col gap-2 px-3 py-2.5 mb-3 bg-white/50 rounded-xl border border-slate-100">
-                    <div class="flex justify-between items-center"><span class="text-[10px] font-bold text-slate-500 uppercase">Sisa Uang (Kembalian):</span><span id="deposit-kembalian" class="font-black text-rose-500 text-xs">Rp 0</span></div>
-                    <label class="flex items-center gap-2 cursor-pointer group mt-1 pt-2 border-t border-emerald-100/50"><input type="checkbox" id="check-donate-deposit" class="w-4 h-4 text-emerald-600 bg-white border-slate-300 rounded focus:ring-emerald-500"><span class="text-[9px] font-bold text-slate-500 group-hover:text-emerald-700 transition uppercase tracking-widest leading-tight">Sisa kembalian masuk sebagai KAS (Donasi)</span></label>
+                <div class="grid grid-cols-2 gap-3 mb-3">
+                    <input type="number" id="input-deposit-qty" placeholder="Jml Kok (Mis: 10)" class="w-full bg-slate-50 text-slate-800 text-sm font-bold px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition">
+                    <input type="text" id="input-deposit-nominal" placeholder="Uang Fisik (Rp)" class="w-full bg-slate-50 text-slate-800 text-sm font-bold px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition">
+                </div>
+                <div class="flex justify-between items-center bg-slate-50 p-3 rounded-xl border border-slate-200 mb-3">
+                    <span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Kembalian</span>
+                    <span id="deposit-kembalian" class="font-mono font-bold text-slate-700 text-sm">Rp 0</span>
+                </div>
+                <div class="mb-4 bg-emerald-50/50 p-3 rounded-xl border border-emerald-100">
+                    <label class="flex items-center gap-2 cursor-pointer group"><input type="checkbox" id="check-donate-deposit" class="w-4 h-4 text-emerald-600 bg-white border-slate-300 rounded focus:ring-emerald-500"><span class="text-[9px] font-bold text-slate-500 group-hover:text-emerald-700 transition uppercase tracking-widest leading-tight">Sisa kembalian masuk sebagai KAS (Donasi)</span></label>
                 </div>
                 <button onclick="actionSubmitDeposit()" class="w-full bg-emerald-600 text-white py-3.5 rounded-2xl font-bold active:scale-95 transition shadow-lg shadow-emerald-200 uppercase text-xs tracking-widest">Proses Deposit</button>
             </div>
+
+            <!-- Riwayat Individu -->
+            <div class="mt-4 mb-6 border-t border-slate-100 pt-4">
+                <div class="flex justify-between items-center mb-3 px-1">
+                    <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-widest">10 Riwayat Terakhir</h3>
+                </div>
+                <div id="profile-history-list" class="space-y-2 max-h-[35vh] overflow-y-auto no-scrollbar pb-2">
+                    <p class="text-center text-[10px] text-slate-400 mt-2 italic">Pilih anggota untuk melihat riwayat</p>
+                </div>
+            </div>
+
             <button onclick="closeMemberProfile()" class="w-full py-2 text-slate-400 font-bold text-xs uppercase tracking-widest">Tutup Laman Profil</button>
         </div>
     </div>
@@ -327,7 +338,7 @@
     </div>
 
     <!-- Modal Edit Transaksi -->
-    <div id="modal-edit" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[110]">
+    <div id="modal-edit" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[120]">
         <div class="bg-white w-full max-w-md rounded-[32px] p-8 animate-slide-up shadow-2xl relative">
             <h2 id="edit-modal-title" class="text-xl font-bold mb-1 uppercase tracking-tight text-emerald-800 text-center">Koreksi Data</h2>
             <p id="edit-modal-subtitle" class="text-slate-400 text-[10px] mb-4 font-bold uppercase tracking-widest italic text-center">Penyesuaian Manual</p>
