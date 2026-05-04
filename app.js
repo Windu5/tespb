@@ -1205,9 +1205,22 @@ window.actionTutupBuku = async () => {
         const MY = getMonthYearStr(null);
         const ts = serverTimestamp();
 
+        // [MENTOR PATCH]: Pindahkan sisa uang (Saldo Akhir sebelumnya) 
+        // ke Total Pemasukan atau Pengeluaran periode baru agar tidak 0 secara visual.
+        let newIncome = 0;
+        let newExpense = 0;
+        
+        if (totalBalanceBku > 0) {
+            newIncome = totalBalanceBku;
+        } else if (totalBalanceBku < 0) {
+            newExpense = Math.abs(totalBalanceBku);
+        }
+
         finalBatch.update(doc(db, "metadata", "stats"), {
-            total_income_bku: 0,
-            total_expense_bku: 0
+            total_income_bku: newIncome,
+            total_expense_bku: newExpense
+            // Catatan: total_balance_bku tidak disentuh di sini karena 
+            // nilainya harus terbawa mutlak (carry over) ke periode baru.
         });
 
         if (totalBalanceBku !== 0) {
@@ -1215,7 +1228,7 @@ window.actionTutupBuku = async () => {
                 type: totalBalanceBku > 0 ? "DEBIT" : "CREDIT",
                 category: "SALDO AWAL",
                 amount: Math.abs(totalBalanceBku),
-                note: `Sisa Kas Bawaan setelah Tutup Bukudari Periode Sebelumnya`,
+                note: `Sisa Kas Bawaan setelah Tutup Buku dari Periode Sebelumnya`,
                 month_year: MY,
                 timestamp: ts
             });
