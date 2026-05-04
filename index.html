@@ -67,10 +67,13 @@
         <section id="tab-history" class="tab-content space-y-3">
             <div class="flex justify-between items-center px-2 mb-2 mt-4">
                 <h2 class="font-bold text-slate-800 italic text-sm">Log Aktivitas Kok</h2>
-                <button onclick="fetchHistory(false)" class="text-emerald-600 p-1 bg-emerald-50 rounded-lg active:scale-90 transition" title="Refresh"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg></button>
+                <div class="flex items-center gap-2">
+                    <!-- ANIMATED BADGE -->
+                    <span id="badge-new-history" class="hidden px-2 py-0.5 bg-rose-500 text-white text-[9px] font-black rounded-full animate-bounce shadow-sm shadow-rose-200">NEW</span>
+                    <button onclick="fetchHistory(false)" class="text-emerald-600 p-1 bg-emerald-50 rounded-lg active:scale-90 transition" title="Refresh"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg></button>
+                </div>
             </div>
             <div id="list-history" class="space-y-2"></div>
-            <!-- Tombol Pagination Load More -->
             <button id="btn-load-history" onclick="loadMoreHistory()" class="hidden w-full py-3.5 mt-4 text-xs font-black uppercase tracking-widest text-slate-500 bg-slate-200/50 rounded-2xl active:scale-95 transition hover:bg-slate-200">Muat Data Lama ↓</button>
         </section>
 
@@ -92,10 +95,13 @@
                     <h2 class="font-bold text-slate-800">Buku Kas Umum</h2>
                     <span class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Masuk & Keluar</span>
                 </div>
-                <button onclick="fetchBKU(false)" class="text-emerald-600 p-1 bg-emerald-50 rounded-lg active:scale-90 transition" title="Refresh"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg></button>
+                <div class="flex items-center gap-2">
+                    <!-- ANIMATED BADGE -->
+                    <span id="badge-new-bku" class="hidden px-2 py-0.5 bg-rose-500 text-white text-[9px] font-black rounded-full animate-bounce shadow-sm shadow-rose-200">NEW</span>
+                    <button onclick="fetchBKU(false)" class="text-emerald-600 p-1 bg-emerald-50 rounded-lg active:scale-90 transition" title="Refresh"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg></button>
+                </div>
             </div>
             <div id="list-bku" class="space-y-2"></div>
-            <!-- Tombol Pagination Load More -->
             <button id="btn-load-bku" onclick="loadMoreBKU()" class="hidden w-full py-3.5 mt-4 text-xs font-black uppercase tracking-widest text-slate-500 bg-slate-200/50 rounded-2xl active:scale-95 transition hover:bg-slate-200">Muat Data Lama ↓</button>
         </section>
 
@@ -115,7 +121,6 @@
             </div>
             <div class="text-center text-xs text-slate-400 mt-8 font-bold italic admin-block">Halaman ini hanya terlihat oleh Admin.</div>
             
-            <!-- Zona Maintenance (Sinkronisasi Ulang) -->
             <div class="admin-block mt-6 p-5 bg-amber-50 border border-amber-200 rounded-3xl shadow-sm">
                 <h3 class="text-[10px] font-black text-amber-600 mb-2 flex items-center gap-2 uppercase tracking-widest">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
@@ -125,7 +130,6 @@
                 <button onclick="actionSinkronKas()" class="w-full bg-amber-500 text-white py-4 rounded-2xl font-bold active:scale-95 transition uppercase text-xs tracking-widest shadow-lg shadow-amber-200">SINKRONISASI KAS SEKARANG</button>
             </div>
 
-            <!-- Zona Berbahaya untuk Tutup Buku -->
             <div class="admin-block mt-4 p-5 bg-rose-50 border border-rose-200 rounded-3xl shadow-sm">
                 <h3 class="text-[10px] font-black text-rose-600 mb-2 flex items-center gap-2 uppercase tracking-widest">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
@@ -148,7 +152,8 @@
             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
             <span class="text-[9px] font-black uppercase tracking-tighter">ANGGOTA</span>
         </button>
-        <button onclick="showTab('tab-history', this)" class="nav-btn flex flex-col items-center gap-1 text-slate-400 transition active:scale-90 w-16">
+        <button onclick="showTab('tab-history', this)" class="nav-btn relative flex flex-col items-center gap-1 text-slate-400 transition active:scale-90 w-16">
+            <span id="nav-dot-history" class="hidden absolute top-1 right-3.5 w-2 h-2 bg-rose-500 rounded-full border border-white z-10 shadow-sm animate-pulse"></span>
             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
             <span class="text-[9px] font-black uppercase tracking-tighter">Log</span>
         </button>
@@ -186,7 +191,8 @@
             <div class="h-10"></div>
         </div>
 
-        <button onclick="showTab('tab-bku', this)" class="nav-btn flex flex-col items-center gap-1 text-slate-400 transition active:scale-90 w-16">
+        <button onclick="showTab('tab-bku', this)" class="nav-btn relative flex flex-col items-center gap-1 text-slate-400 transition active:scale-90 w-16">
+            <span id="nav-dot-bku" class="hidden absolute top-1 right-3.5 w-2 h-2 bg-rose-500 rounded-full border border-white z-10 shadow-sm animate-pulse"></span>
             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
             <span class="text-[9px] font-black uppercase tracking-tighter">Kas</span>
         </button>

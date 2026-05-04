@@ -31,6 +31,7 @@ try {
     alert("Sistem gagal terhubung ke database. Coba muat ulang halaman.");
 }
 
+// Global UI State
 let currentUser = null;
 let allMembers = [];
 let currentCockPrice = 3000;
@@ -45,6 +46,10 @@ const FETCH_LIMIT = 15;
 // Profile State
 let currentProfileMemberId = null;
 let memberHistoryData = [];
+
+// Trackers Visual Notifikasi (Lightweight Observers)
+let currentTopHistoryId = null;
+let currentTopBkuId = null;
 
 // ==========================================
 // 1. HELPER FUNCTIONS & FORMATTERS
@@ -279,6 +284,11 @@ onAuthStateChanged(auth, (user) => {
 // --- FETCH HISTORY ---
 window.fetchHistory = async (isLoadMore = false) => {
     const btnLoad = document.getElementById('btn-load-history');
+    
+    // [MENTOR PATCH] Reset visual indicators saat pengguna merefresh
+    document.getElementById('badge-new-history')?.classList.add('hidden');
+    document.getElementById('nav-dot-history')?.classList.add('hidden');
+
     if (!isLoadMore) {
         lastVisibleHistory = null;
         historyData = []; 
@@ -296,6 +306,9 @@ window.fetchHistory = async (isLoadMore = false) => {
         const snap = await getDocs(q);
         
         if (!snap.empty) {
+            // Update Tracker agar tidak looping animasi
+            if (!isLoadMore) currentTopHistoryId = snap.docs[0].id;
+            
             lastVisibleHistory = snap.docs[snap.docs.length - 1];
             const newDocs = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             historyData = [...historyData, ...newDocs];
@@ -350,6 +363,11 @@ function renderHistoryList() {
 // --- FETCH BKU ---
 window.fetchBKU = async (isLoadMore = false) => {
     const btnLoad = document.getElementById('btn-load-bku');
+
+    // [MENTOR PATCH] Reset visual indicators saat fetch
+    document.getElementById('badge-new-bku')?.classList.add('hidden');
+    document.getElementById('nav-dot-bku')?.classList.add('hidden');
+
     if (!isLoadMore) {
         lastVisibleBKU = null;
         bkuData = []; 
@@ -367,6 +385,9 @@ window.fetchBKU = async (isLoadMore = false) => {
         const snap = await getDocs(q);
         
         if (!snap.empty) {
+            // Update Tracker agar tidak looping animasi
+            if (!isLoadMore) currentTopBkuId = snap.docs[0].id;
+
             lastVisibleBKU = snap.docs[snap.docs.length - 1];
             const newDocs = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             bkuData = [...bkuData, ...newDocs];
@@ -483,6 +504,31 @@ onSnapshot(doc(db, "metadata", "stats"), (ds) => {
         
         const bkuExpenseEl = document.getElementById('display-bku-expense');
         if(bkuExpenseEl) bkuExpenseEl.innerText = "Rp " + formatRupiahInput((data.total_expense_bku || 0).toString());
+    }
+});
+
+// [MENTOR PATCH] LIGHTWEIGHT OBSERVERS - Indicator-Driven Refresh (The Spy)
+onSnapshot(query(collection(db, "shuttlecock_history"), orderBy("timestamp", "desc"), limit(1)), (snap) => {
+    if (!snap.empty) {
+        const latestId = snap.docs[0].id;
+        if (currentTopHistoryId !== null && latestId !== currentTopHistoryId) {
+            document.getElementById('badge-new-history')?.classList.remove('hidden');
+            document.getElementById('nav-dot-history')?.classList.remove('hidden');
+        } else if (currentTopHistoryId === null) {
+            currentTopHistoryId = latestId; // Setup tracker di tarikan pertama
+        }
+    }
+});
+
+onSnapshot(query(collection(db, "bku_transactions"), orderBy("timestamp", "desc"), limit(1)), (snap) => {
+    if (!snap.empty) {
+        const latestId = snap.docs[0].id;
+        if (currentTopBkuId !== null && latestId !== currentTopBkuId) {
+            document.getElementById('badge-new-bku')?.classList.remove('hidden');
+            document.getElementById('nav-dot-bku')?.classList.remove('hidden');
+        } else if (currentTopBkuId === null) {
+            currentTopBkuId = latestId; // Setup tracker di tarikan pertama
+        }
     }
 });
 
