@@ -555,10 +555,6 @@ window.openMemberProfile = (id) => {
     document.getElementById('profile-name').innerText = m.name;
     document.getElementById('profile-balance').innerText = `${m.shuttlecock_balance} Kok`;
     
-    // Sembunyikan form deposit tiap kali profil dibuka (Reset State)
-    const formDep = document.getElementById('profile-deposit-form');
-    if (formDep) formDep.classList.add('hidden');
-    
     document.getElementById('input-deposit-qty').value = "";
     document.getElementById('input-deposit-nominal').value = "";
     document.getElementById('deposit-kembalian').innerText = "Rp 0";
@@ -574,13 +570,6 @@ window.openMemberProfile = (id) => {
 window.closeMemberProfile = () => {
     currentProfileMemberId = null;
     document.getElementById('modal-member-profile').classList.add('hidden');
-};
-
-// Logika UI: Toggle Form Deposit
-window.toggleProfileDepositForm = () => {
-    if (!currentUser) return; // Proteksi keamanan lapis dua (Backend JS)
-    const formDep = document.getElementById('profile-deposit-form');
-    if (formDep) formDep.classList.toggle('hidden');
 };
 
 window.fetchMemberHistory = async (id) => {
