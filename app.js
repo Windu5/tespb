@@ -555,6 +555,15 @@ window.openMemberProfile = (id) => {
     document.getElementById('profile-name').innerText = m.name;
     document.getElementById('profile-balance').innerText = `${m.shuttlecock_balance} Kok`;
     
+    // Reset State Toggle Form Deposit agar selalu tertutup saat profil dibuka
+    const formDep = document.getElementById('profile-deposit-form');
+    const iconPlus = document.getElementById('icon-plus');
+    const iconMinus = document.getElementById('icon-minus');
+    
+    if (formDep) formDep.classList.add('hidden');
+    if (iconPlus) iconPlus.classList.remove('hidden');
+    if (iconMinus) iconMinus.classList.add('hidden');
+    
     document.getElementById('input-deposit-qty').value = "";
     document.getElementById('input-deposit-nominal').value = "";
     document.getElementById('deposit-kembalian').innerText = "Rp 0";
@@ -570,6 +579,20 @@ window.openMemberProfile = (id) => {
 window.closeMemberProfile = () => {
     currentProfileMemberId = null;
     document.getElementById('modal-member-profile').classList.add('hidden');
+};
+
+// Fungsi Baru untuk Toggle Form Deposit
+window.toggleProfileDepositForm = () => {
+    if (!currentUser) return; // Proteksi lapis dua khusus Admin
+    const formDep = document.getElementById('profile-deposit-form');
+    const iconPlus = document.getElementById('icon-plus');
+    const iconMinus = document.getElementById('icon-minus');
+    
+    if (formDep) {
+        const isHidden = formDep.classList.toggle('hidden');
+        if (iconPlus) iconPlus.classList.toggle('hidden', !isHidden);
+        if (iconMinus) iconMinus.classList.toggle('hidden', isHidden);
+    }
 };
 
 window.fetchMemberHistory = async (id) => {
