@@ -6,11 +6,41 @@
     <title>PB. Batu Betulis App</title>
     <link rel="icon" href="https://firebase.google.com/favicon.ico" type="image/x-icon">
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="style.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+
+        body { 
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .tab-content { display: none; }
+        .tab-content.active { display: block; animation: fadeIn 0.3s ease; }
+
+        @keyframes fadeIn { 
+            from { opacity: 0; transform: translateY(10px); } 
+            to { opacity: 1; transform: translateY(0); } 
+        }
+
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        .bottom-nav-active { color: #059669; }
+        .bottom-nav-active svg { fill: #059669; }
+
+        /* Logic Visibilitas Admin Global */
+        .admin-only { display: none !important; }
+        body.is-admin .admin-only { display: flex !important; }
+        .admin-block { display: none !important; }
+        body.is-admin .admin-block { display: block !important; }
+
+        /* Interaksi Kartu Member untuk Admin */
+        body.is-admin .member-card { cursor: pointer; }
+        body.is-admin .member-card:hover { border-color: #a7f3d0; }
+    </style>
 </head>
 <body class="bg-slate-50 text-slate-900 pb-28">
 
-    <!-- App Bar -->
     <header class="bg-white border-b border-slate-100 sticky top-0 z-40 px-6 py-4 flex justify-between items-center">
         <div>
             <h1 class="text-lg font-bold text-emerald-800 tracking-tight uppercase">PB. Batu Betulis</h1>
@@ -35,7 +65,6 @@
 
     <main class="container mx-auto max-w-md px-4 py-6">
         
-        <!-- Summary Dashboard -->
         <div class="grid grid-cols-5 gap-3 mb-6">
             <div class="col-span-3 bg-emerald-700 p-5 rounded-3xl text-center shadow-lg shadow-emerald-200/50 flex flex-col justify-center">
                 <p class="text-[9px] text-emerald-100 font-black uppercase tracking-widest mb-1.5">Saldo Kas Klub</p>
@@ -47,7 +76,6 @@
             </div>
         </div>
 
-        <!-- SCREEN: SALDO ANGGOTA (DEPOSIT) -->
         <section id="tab-members" class="tab-content active space-y-3">
             <div class="flex justify-between items-center px-2 mb-1">
                 <div class="flex items-center gap-2">
@@ -63,21 +91,15 @@
             </div>
         </section>
 
-        <!-- SCREEN: RIWAYAT KOK (LOG) -->
         <section id="tab-history" class="tab-content space-y-3">
             <div class="flex justify-between items-center px-2 mb-2 mt-4">
                 <h2 class="font-bold text-slate-800 italic text-sm">Log Aktivitas Kok</h2>
-                <div class="flex items-center gap-2">
-                    <!-- ANIMATED BADGE -->
-                    <span id="badge-new-history" class="hidden px-2 py-0.5 bg-rose-500 text-white text-[9px] font-black rounded-full animate-bounce shadow-sm shadow-rose-200">NEW</span>
-                    <button onclick="fetchHistory(false)" class="text-emerald-600 p-1 bg-emerald-50 rounded-lg active:scale-90 transition" title="Refresh"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg></button>
-                </div>
+                <!-- Refresh Button & Badge dihapus. Sistem otomatis realtime memantau 15 transaksi terbaru. -->
             </div>
             <div id="list-history" class="space-y-2"></div>
             <button id="btn-load-history" onclick="loadMoreHistory()" class="hidden w-full py-3.5 mt-4 text-xs font-black uppercase tracking-widest text-slate-500 bg-slate-200/50 rounded-2xl active:scale-95 transition hover:bg-slate-200">Muat Data Lama ↓</button>
         </section>
 
-        <!-- SCREEN: LAPORAN BKU (KAS) -->
         <section id="tab-bku" class="tab-content space-y-3">
             <div class="grid grid-cols-2 gap-3 mb-4 mt-2">
                 <div class="bg-blue-50 p-4 rounded-3xl border border-blue-100 text-center flex flex-col justify-center shadow-sm">
@@ -95,17 +117,12 @@
                     <h2 class="font-bold text-slate-800">Buku Kas Umum</h2>
                     <span class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Masuk & Keluar</span>
                 </div>
-                <div class="flex items-center gap-2">
-                    <!-- ANIMATED BADGE -->
-                    <span id="badge-new-bku" class="hidden px-2 py-0.5 bg-rose-500 text-white text-[9px] font-black rounded-full animate-bounce shadow-sm shadow-rose-200">NEW</span>
-                    <button onclick="fetchBKU(false)" class="text-emerald-600 p-1 bg-emerald-50 rounded-lg active:scale-90 transition" title="Refresh"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg></button>
-                </div>
+                <!-- Refresh Button & Badge dihapus untuk BKU -->
             </div>
             <div id="list-bku" class="space-y-2"></div>
             <button id="btn-load-bku" onclick="loadMoreBKU()" class="hidden w-full py-3.5 mt-4 text-xs font-black uppercase tracking-widest text-slate-500 bg-slate-200/50 rounded-2xl active:scale-95 transition hover:bg-slate-200">Muat Data Lama ↓</button>
         </section>
 
-        <!-- SCREEN: PENGATURAN (ADMIN ONLY) -->
         <section id="tab-settings" class="tab-content space-y-3">
             <div class="admin-block space-y-4 mb-6">
                 <div class="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm border-l-4 border-l-purple-500">
@@ -139,6 +156,16 @@
                 <button onclick="actionTutupBuku()" class="w-full bg-rose-600 text-white py-4 rounded-2xl font-bold active:scale-95 transition uppercase text-xs tracking-widest shadow-lg shadow-rose-200">TUTUP BUKU SEKARANG</button>
             </div>
 
+            <div class="admin-block mt-6 p-5 bg-slate-100/50 border border-slate-200 rounded-3xl shadow-sm">
+                <h3 class="text-[10px] font-black text-slate-600 mb-4 flex items-center gap-2 uppercase tracking-widest">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" /></svg>
+                    ARSIP PERIODE (READ-ONLY)
+                </h3>
+                <div id="list-archives" class="space-y-3">
+                    <p class="text-center text-[10px] text-slate-400 italic">Memuat arsip...</p>
+                </div>
+            </div>
+
             <div class="text-center text-xs text-slate-400 mt-8 font-bold italic admin-only hidden">Silakan login untuk melihat pengaturan.</div>
         </section>
     </main>
@@ -146,19 +173,17 @@
     <!-- Overlay Gelap untuk Menu FAB -->
     <div id="fab-overlay" onclick="toggleFabMenu()" class="hidden fixed inset-0 bg-slate-900/40 backdrop-blur-[2px] z-[45] transition-opacity duration-300 opacity-0"></div>
 
-    <!-- Bottom Navigation -->
     <nav class="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t border-slate-100 px-2 pt-2 pb-4 flex justify-around items-end z-50">
         <button onclick="showTab('tab-members', this)" class="nav-btn flex flex-col items-center gap-1 bottom-nav-active transition active:scale-90 w-16">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
             <span class="text-[9px] font-black uppercase tracking-tighter">ANGGOTA</span>
         </button>
         <button onclick="showTab('tab-history', this)" class="nav-btn relative flex flex-col items-center gap-1 text-slate-400 transition active:scale-90 w-16">
-            <span id="nav-dot-history" class="hidden absolute top-1 right-3.5 w-2 h-2 bg-rose-500 rounded-full border border-white z-10 shadow-sm animate-pulse"></span>
+            <!-- Nav-dot Badge Dihapus -->
             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
             <span class="text-[9px] font-black uppercase tracking-tighter">Log</span>
         </button>
 
-        <!-- BIG CENTRAL FAB -->
         <div class="admin-only flex justify-center relative w-16">
             <div id="fab-menu" class="hidden absolute bottom-20 left-1/2 -translate-x-1/2 w-[80vw] max-w-[300px] bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl border border-slate-100 p-2.5 flex flex-col z-[60] origin-bottom opacity-0 scale-95 translate-y-4 transition-all duration-300">
                 <div class="px-3 py-2 border-b border-slate-100 mb-1.5">
@@ -177,7 +202,7 @@
                     <div class="flex-1"><p class="text-xs font-black text-rose-800 uppercase tracking-wider">Pemakaian Match</p><p class="text-[9px] font-bold text-rose-600/70 mt-0.5 leading-tight">Catat kok terpakai</p></div>
                 </button>
                 <button onclick="openKasModal(); toggleFabMenu();" class="flex items-center gap-3 w-full p-2.5 hover:bg-blue-50 rounded-2xl text-left active:scale-95 transition group">
-                    <div class="w-10 h-10 rounded-xl bg-blue-100 text-blue-600 group-hover:bg-blue-200 group-hover:text-blue-800 flex items-center justify-center transition shrink-0"><svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></div>
+                    <div class="w-10 h-10 rounded-xl bg-blue-100 text-blue-600 group-hover:bg-blue-200 group-hover:text-blue-800 flex items-center justify-center transition shrink-0"><svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08-.402-2.599-1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></div>
                     <div class="flex-1"><p class="text-xs font-black text-blue-800 uppercase tracking-wider">Catat Keuangan</p><p class="text-[9px] font-bold text-blue-600/70 mt-0.5 leading-tight">Kas masuk & pengeluaran</p></div>
                 </button>
             </div>
@@ -192,7 +217,7 @@
         </div>
 
         <button onclick="showTab('tab-bku', this)" class="nav-btn relative flex flex-col items-center gap-1 text-slate-400 transition active:scale-90 w-16">
-            <span id="nav-dot-bku" class="hidden absolute top-1 right-3.5 w-2 h-2 bg-rose-500 rounded-full border border-white z-10 shadow-sm animate-pulse"></span>
+            <!-- Nav-dot Badge Dihapus -->
             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
             <span class="text-[9px] font-black uppercase tracking-tighter">Kas</span>
         </button>
@@ -202,7 +227,6 @@
         </button>
     </nav>
 
-    <!-- Modal Login & Tambah Member -->
     <div id="modal-login" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100]">
         <div class="bg-white w-full max-w-md rounded-[32px] p-8 animate-slide-up shadow-2xl text-center"><h2 class="text-2xl font-bold mb-1">Login Pengurus</h2><p class="text-slate-400 text-sm mb-8">PB. Batu Betulis Management System</p><div class="space-y-4 mb-10"><input type="email" id="login-email" placeholder="Email" class="w-full bg-slate-50 p-4 rounded-2xl border-none focus:ring-2 focus:ring-emerald-500"><input type="password" id="login-pass" placeholder="Password" class="w-full bg-slate-50 p-4 rounded-2xl border-none focus:ring-2 focus:ring-emerald-500"><button id="btn-do-login" class="w-full bg-emerald-700 text-white py-4 rounded-2xl font-bold active:scale-95 transition">MASUK</button><button onclick="closeLogin()" class="w-full py-2 text-slate-400 font-bold text-xs uppercase tracking-widest">Batal</button></div></div>
     </div>
@@ -210,7 +234,7 @@
         <div class="bg-white w-full max-w-md rounded-[32px] p-8 animate-slide-up shadow-2xl relative"><h2 class="text-xl font-bold mb-1 uppercase tracking-tight text-slate-800 text-center">Anggota Baru</h2><p class="text-slate-400 text-[10px] mb-6 font-bold uppercase tracking-widest italic text-center">Pendaftaran Anggota Klub</p><div class="space-y-4 mb-4"><input type="text" id="input-new-member" placeholder="Nama Lengkap Anggota" class="w-full bg-slate-50 p-4 rounded-2xl border-none text-sm font-bold focus:ring-2 focus:ring-slate-800"><button onclick="actionAddMember()" class="w-full bg-slate-800 text-white py-4 rounded-2xl font-bold active:scale-95 transition shadow-lg shadow-slate-200 uppercase text-xs tracking-widest">Simpan Anggota</button><button onclick="closeAddMemberModal()" class="w-full py-2 text-slate-400 font-bold text-xs uppercase tracking-widest">Batal</button></div></div>
     </div>
 
-    <!-- MODAL 2: Unified Profil Modal -->
+    <!-- Unified Profil Modal -->
     <div id="modal-member-profile" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[110]">
         <div class="bg-white w-full max-w-md max-h-[90vh] overflow-y-auto no-scrollbar rounded-[32px] p-8 animate-slide-up shadow-2xl relative">
             <div class="flex justify-between items-start mb-6">
@@ -225,7 +249,6 @@
                     <p class="text-[9px] font-bold uppercase tracking-widest text-slate-400 mb-0.5">Sisa Saldo</p>
                     <div class="flex items-center justify-end gap-2">
                         <p id="profile-balance" class="text-lg font-black text-emerald-600">0 Kok</p>
-                        <!-- TOMBOL TOGGLE DEPOSIT -->
                         <button onclick="toggleProfileDepositForm()" class="admin-only bg-emerald-100 text-emerald-600 rounded-full w-6 h-6 flex items-center justify-center hover:bg-emerald-200 transition active:scale-95" title="Buka/Tutup Form Deposit">
                             <svg id="icon-plus" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" /></svg>
                             <svg id="icon-minus" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 hidden" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5 10a1 1 0 011-1h8a1 1 0 110 2H6a1 1 0 01-1-1z" clip-rule="evenodd" /></svg>
@@ -233,7 +256,7 @@
                     </div>
                 </div>
             </div>
-            <!-- PEMBUNGKUS FORM DEPOSIT -->
+            
             <div id="profile-deposit-form" class="hidden p-4 bg-emerald-50 rounded-3xl mb-6 border border-emerald-100 transition-all duration-300">
                 <h3 class="text-[10px] font-black text-emerald-700 uppercase tracking-widest mb-3 ml-2">Tambah Deposit Kok</h3>
                 <input type="hidden" id="profile-member-id">
@@ -262,7 +285,7 @@
         </div>
     </div>
 
-    <!-- MODAL 3: Global Deposit Kok -->
+    <!-- Global Deposit Kok -->
     <div id="modal-global-deposit" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[110]">
         <div class="bg-white w-full max-w-md rounded-[32px] p-8 animate-slide-up shadow-2xl relative">
             <h2 class="text-xl font-bold mb-1 uppercase tracking-tight text-emerald-800 text-center">Deposit Kok</h2>
@@ -283,7 +306,7 @@
         </div>
     </div>
 
-    <!-- MODAL 4: Pemakaian Match -->
+    <!-- Pemakaian Match -->
     <div id="modal-usage" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[110]">
         <div class="bg-white w-full max-w-md rounded-[32px] p-8 animate-slide-up shadow-2xl relative">
             <h2 class="text-xl font-bold mb-1 uppercase tracking-tight text-rose-600 text-center">Pemakaian Match</h2>
@@ -311,7 +334,7 @@
         </div>
     </div>
 
-    <!-- MODAL 5: Catat Kas (BKU) -->
+    <!-- Catat Kas (BKU) -->
     <div id="modal-kas" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[110]">
         <div class="bg-white w-full max-w-md rounded-[32px] p-8 animate-slide-up shadow-2xl relative">
             <h2 class="text-xl font-bold mb-4 uppercase tracking-tight text-slate-800 text-center">Catat Kas (BKU)</h2>
@@ -320,7 +343,6 @@
                 <button onclick="switchKasTab('EXPENSE')" id="btn-kas-expense" class="flex-1 py-3 text-[10px] font-black uppercase tracking-widest rounded-xl text-slate-400 transition hover:text-slate-600">Pengeluaran</button>
             </div>
 
-            <!-- Form Income -->
             <div id="form-income" class="space-y-3 mb-4">
                 <input type="date" id="input-income-date" class="w-full bg-slate-50 p-4 rounded-2xl border-none text-sm font-bold focus:ring-2 focus:ring-blue-500 text-slate-700">
                 <select id="input-income-category" class="w-full bg-slate-50 p-4 rounded-2xl border-none text-sm font-semibold">
@@ -333,7 +355,6 @@
                 <button onclick="actionSubmitIncome()" class="w-full bg-blue-600 text-white py-4 rounded-2xl font-bold active:scale-95 transition uppercase text-xs tracking-widest shadow-lg shadow-blue-100">Catat Pemasukan</button>
             </div>
 
-            <!-- Form Expense -->
             <div id="form-expense" class="hidden space-y-3 mb-4">
                 <input type="date" id="input-expense-date" class="w-full bg-slate-50 p-4 rounded-2xl border-none text-sm font-bold focus:ring-2 focus:ring-rose-500 text-slate-700">
                 <select id="input-expense-category" class="w-full bg-slate-50 p-4 rounded-2xl border-none text-sm font-semibold">
@@ -371,18 +392,762 @@
         </div>
     </div>
 
-    <!-- Unified Custom Dialog Modal -->
+    <!-- Custom Dialog Modal -->
     <div id="custom-dialog" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-[200] opacity-0 transition-opacity duration-300">
         <div class="bg-white w-full max-w-sm rounded-[32px] p-8 shadow-2xl transform scale-95 transition-transform duration-300" id="custom-dialog-box"><div id="dialog-icon-container" class="mx-auto w-16 h-16 rounded-full flex items-center justify-center mb-4 transition-colors duration-300"><svg id="dialog-icon" class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"></svg></div><h3 id="dialog-title" class="text-xl font-bold text-center text-slate-800 mb-2 tracking-tight">Title</h3><p id="dialog-message" class="text-sm text-slate-500 text-center mb-6 leading-relaxed">Message</p><div id="dialog-input-container" class="hidden mb-6"><input type="text" id="dialog-input" class="w-full bg-slate-50 p-4 rounded-2xl border-none text-sm focus:ring-2 focus:ring-emerald-500 font-bold text-center text-slate-700" autocomplete="off"></div><div id="dialog-buttons" class="flex gap-3"><button id="btn-dialog-cancel" class="hidden flex-1 py-3.5 bg-slate-100 text-slate-600 rounded-2xl font-bold text-xs uppercase tracking-widest active:scale-95 transition hover:bg-slate-200">Batal</button><button id="btn-dialog-confirm" class="flex-1 py-3.5 text-white rounded-2xl font-bold text-xs uppercase tracking-widest shadow-lg active:scale-95 transition">OK</button></div></div>
     </div>
 
-    <!-- Loading Overlay Pemblokir UI untuk Proses Massal / Tutup Buku -->
+    <!-- Modal Detail Arsip Anggota -->
+    <div id="modal-archive-detail" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[120]">
+        <div class="bg-white w-full max-w-md max-h-[85vh] flex flex-col rounded-[32px] p-6 animate-slide-up shadow-2xl relative">
+            <h2 class="text-xl font-bold mb-1 uppercase tracking-tight text-slate-800 text-center">Detail Saldo Anggota</h2>
+            <p id="archive-detail-subtitle" class="text-slate-400 text-[10px] mb-6 font-bold uppercase tracking-widest italic text-center">Loading...</p>
+            <div class="overflow-y-auto no-scrollbar flex-1 border border-slate-100 rounded-xl bg-white shadow-sm">
+                <table class="w-full text-left border-collapse">
+                    <tbody id="archive-detail-list" class="divide-y divide-slate-100"></tbody>
+                </table>
+            </div>
+            <button onclick="closeArchiveDetail()" class="w-full py-4 mt-4 text-slate-500 font-bold text-xs uppercase tracking-widest bg-slate-100 hover:bg-slate-200 rounded-2xl active:scale-95 transition shadow-sm">TUTUP DETAIL</button>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
     <div id="loading-overlay" class="hidden fixed inset-0 bg-slate-900/95 backdrop-blur-md z-[9999] flex flex-col items-center justify-center p-6 transition-opacity duration-300">
         <svg class="animate-spin h-14 w-14 text-rose-500 mb-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
         <h2 id="loading-title" class="text-white font-black uppercase tracking-widest text-xl animate-pulse text-center">SEDANG MEMPROSES...</h2>
         <p class="text-rose-400 font-bold text-[10px] uppercase tracking-widest mt-4 text-center leading-relaxed">JANGAN TUTUP, MINIMIZE, ATAU REFRESH APLIKASI INI!<br>DATABASE ANDA BISA RUSAK TOTAL.</p>
     </div>
 
-    <script type="module" src="app.js"></script>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, deleteDoc, getDoc, updateDoc, collection, query, orderBy, limit, onSnapshot, writeBatch, serverTimestamp, increment, getDocs, startAfter, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCnHKhINwZgnon4O0WPfdiYpb9tK118jTY",
+            authDomain: "pb-batu-bertulis-1.firebaseapp.com",
+            projectId: "pb-batu-bertulis-1",
+            storageBucket: "pb-batu-bertulis-1.firebasestorage.app",
+            messagingSenderId: "845117339520",
+            appId: "1:845117339520:web:47ccdc6a13622c5626b365"
+        };
+
+        let app, auth, db;
+        try {
+            app = initializeApp(firebaseConfig);
+            auth = getAuth(app);
+            db = getFirestore(app);
+        } catch (error) {
+            console.error("KRITIKAL: Firebase gagal diinisialisasi.", error);
+            alert("Sistem gagal terhubung ke database. Coba muat ulang halaman.");
+        }
+
+        // Global State
+        let currentUser = null;
+        let allMembers = [];
+        let currentCockPrice = 3000;
+        let currentProfileMemberId = null;
+
+        // ==========================================
+        // SMART ONSNAPSHOT STATE (HYBRID PAGINATION)
+        // ==========================================
+        const FETCH_LIMIT = 15;
+        
+        let liveHistoryData = [];
+        let staticHistoryData = [];
+        let historyUnsub = null;
+        let lastHistoryCursorSnap = null;
+
+        let liveBkuData = [];
+        let staticBkuData = [];
+        let bkuUnsub = null;
+        let lastBkuCursorSnap = null;
+
+        // ==========================================
+        // HELPER FUNCTIONS
+        // ==========================================
+        function formatRupiahInput(value) {
+            if (!value) return '';
+            let numberString = value.toString().replace(/[^,\d]/g, '');
+            let split = numberString.split(',');
+            let sisa = split[0].length % 3;
+            let rupiah = split[0].substr(0, sisa);
+            let ribuan = split[0].substr(sisa).match(/\d{3}/gi);
+            if (ribuan) { let separator = sisa ? '.' : ''; rupiah += separator + ribuan.join('.'); }
+            return split[1] != undefined ? rupiah + ',' + split[1] : rupiah;
+        }
+
+        function parseRupiahInt(value) { return parseInt(value?.toString().replace(/\./g, '')) || 0; }
+        
+        function processRealtimeDate(dateString) {
+            if (!dateString) return serverTimestamp(); 
+            const d = new Date(dateString);
+            const now = new Date();
+            d.setHours(now.getHours(), now.getMinutes(), now.getSeconds(), 0);
+            return d;
+        }
+
+        function getMonthYearStr(dateString) {
+            const d = dateString ? new Date(dateString) : new Date();
+            const m = String(d.getMonth() + 1).padStart(2, '0');
+            return `${m}-${d.getFullYear()}`; 
+        }
+
+        function bindDepositInputs(qtyId, nomId, kembalianId) {
+            const elQty = document.getElementById(qtyId);
+            const elNom = document.getElementById(nomId);
+            const elKembalian = document.getElementById(kembalianId);
+            if (!elQty || !elNom) return;
+
+            elQty.addEventListener('input', (e) => {
+                const q = parseInt(e.target.value) || 0;
+                elNom.value = q > 0 ? formatRupiahInput((q * currentCockPrice).toString()) : '';
+                if (elKembalian) elKembalian.innerText = 'Rp 0';
+            });
+
+            elNom.addEventListener('input', (e) => {
+                elNom.value = formatRupiahInput(e.target.value);
+                const amt = parseRupiahInt(e.target.value);
+                const calcQty = Math.floor(amt / currentCockPrice);
+                elQty.value = calcQty > 0 ? calcQty : '';
+                if (elKembalian) {
+                    const kembalian = amt > (calcQty * currentCockPrice) ? amt - (calcQty * currentCockPrice) : 0;
+                    elKembalian.innerText = "Rp " + formatRupiahInput(kembalian.toString());
+                }
+            });
+        }
+
+        function setupRupiahFormatter() {
+            ['input-income-amount', 'input-expense-amount', 'edit-val-amount', 'input-setting-price'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.addEventListener('input', function() { this.value = formatRupiahInput(this.value); });
+            });
+        }
+
+        window.getSkeletonHTML = (type) => {
+            const r3 = `<tr class="animate-pulse"><td class="py-3 px-2.5 w-14"><div class="h-3 bg-slate-200 rounded w-10 mb-1.5"></div><div class="h-2 bg-slate-100 rounded w-8"></div></td><td class="py-3 px-2.5"><div class="h-3 bg-slate-200 rounded w-24 mb-1.5"></div><div class="h-2 bg-slate-100 rounded w-16"></div></td><td class="py-3 px-2.5 text-right flex flex-col items-end"><div class="h-3 bg-slate-200 rounded w-12 mb-1.5"></div><div class="h-2 bg-slate-100 rounded w-16"></div></td></tr>`;
+            const r2 = `<tr class="animate-pulse"><td class="py-3 px-3"><div class="h-3.5 bg-slate-200 rounded w-24 mb-1.5"></div></td><td class="py-3 px-3 text-right flex flex-col items-end"><div class="h-3.5 bg-slate-200 rounded w-14 mb-1.5"></div><div class="h-2 bg-slate-100 rounded w-20"></div></td></tr>`;
+            const rp = `<div class="bg-slate-50/50 p-3 rounded-xl border border-slate-100 flex items-center justify-between gap-3 animate-pulse mb-2"><div class="flex-1"><div class="flex items-center gap-2 mb-1.5"><div class="h-3 w-10 bg-slate-200 rounded"></div><div class="h-2 w-12 bg-slate-200 rounded"></div></div><div class="h-2 w-24 bg-slate-200 rounded"></div></div><div class="text-right flex flex-col items-end"><div class="h-3 w-12 bg-slate-200 rounded mb-1"></div></div></div>`;
+            if (type === '3col') return `<div class="overflow-hidden bg-white rounded-xl shadow-sm border border-slate-200"><table class="w-full text-left border-collapse"><tbody class="divide-y divide-slate-100">${r3.repeat(4)}</tbody></table></div>`;
+            if (type === '2col') return `<div class="overflow-hidden bg-white rounded-xl shadow-sm border border-slate-200"><table class="w-full text-left border-collapse"><tbody class="divide-y divide-slate-100">${r2.repeat(4)}</tbody></table></div>`;
+            if (type === 'profile') return rp.repeat(3); return '';
+        };
+
+        window.appDialog = function(options) {
+            return new Promise((resolve) => {
+                const modal = document.getElementById('custom-dialog');
+                const box = document.getElementById('custom-dialog-box');
+                const icon = document.getElementById('dialog-icon');
+                const btnConfirm = document.getElementById('btn-dialog-confirm');
+                
+                if(!modal) return resolve(options.type === 'confirm' ? confirm(options.message) : (options.type === 'prompt' ? prompt(options.message) : alert(options.message)));
+
+                document.getElementById('dialog-input-container').classList.add('hidden');
+                document.getElementById('btn-dialog-cancel').classList.add('hidden');
+                document.getElementById('dialog-input').value = options.inputValue || '';
+                document.getElementById('dialog-title').innerText = options.title || 'Info';
+                document.getElementById('dialog-message').innerText = options.message || '';
+
+                let colorClass = 'bg-blue-100 text-blue-600';
+                let svgPath = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />';
+                btnConfirm.className = 'flex-1 py-3.5 text-white rounded-2xl font-bold text-xs uppercase tracking-widest shadow-lg active:scale-95 transition bg-blue-600 shadow-blue-200';
+
+                if (options.type === 'error') { colorClass = 'bg-rose-100 text-rose-600'; btnConfirm.classList.replace('bg-blue-600', 'bg-rose-600'); btnConfirm.classList.replace('shadow-blue-200', 'shadow-rose-200'); svgPath = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />'; } 
+                else if (options.type === 'success') { colorClass = 'bg-emerald-100 text-emerald-600'; btnConfirm.classList.replace('bg-blue-600', 'bg-emerald-600'); btnConfirm.classList.replace('shadow-blue-200', 'shadow-emerald-200'); svgPath = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />'; } 
+                else if (options.type === 'warning' || options.type === 'confirm') { colorClass = 'bg-amber-100 text-amber-600'; btnConfirm.classList.replace('bg-blue-600', 'bg-amber-500'); btnConfirm.classList.replace('shadow-blue-200', 'shadow-amber-200'); svgPath = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />'; if (options.type === 'confirm') document.getElementById('btn-dialog-cancel').classList.remove('hidden'); }
+
+                if (options.type === 'prompt') { document.getElementById('dialog-input-container').classList.remove('hidden'); document.getElementById('btn-dialog-cancel').classList.remove('hidden'); setTimeout(() => document.getElementById('dialog-input').focus(), 300); }
+
+                document.getElementById('dialog-icon-container').className = `mx-auto w-16 h-16 rounded-full flex items-center justify-center mb-4 ${colorClass}`;
+                icon.innerHTML = svgPath;
+
+                modal.classList.remove('hidden');
+                setTimeout(() => { modal.classList.replace('opacity-0', 'opacity-100'); box.classList.replace('scale-95', 'scale-100'); }, 10);
+
+                const close = (res) => {
+                    modal.classList.replace('opacity-100', 'opacity-0'); box.classList.replace('scale-100', 'scale-95');
+                    setTimeout(() => { modal.classList.add('hidden'); resolve(res); }, 300);
+                };
+
+                btnConfirm.onclick = () => close(options.type === 'prompt' ? document.getElementById('dialog-input').value : true);
+                document.getElementById('btn-dialog-cancel').onclick = () => close(options.type === 'prompt' ? null : false);
+            });
+        };
+
+        window.showTab = (id, btn) => {
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.nav-btn').forEach(b => { b.classList.remove('bottom-nav-active', 'text-slate-400'); b.classList.add('text-slate-400'); });
+            document.getElementById(id).classList.add('active');
+            if (btn) { btn.classList.remove('text-slate-400'); btn.classList.add('bottom-nav-active'); }
+        };
+
+        window.closeLogin = () => document.getElementById('modal-login').classList.add('hidden');
+        document.getElementById('btn-login-trigger')?.addEventListener('click', () => document.getElementById('modal-login').classList.remove('hidden'));
+
+        document.getElementById('btn-do-login')?.addEventListener('click', async () => {
+            try {
+                await signInWithEmailAndPassword(auth, document.getElementById('login-email').value, document.getElementById('login-pass').value);
+                closeLogin(); appDialog({title: 'Berhasil', message: 'Anda telah masuk ke sistem.', type: 'success'});
+            } catch (err) { appDialog({title: 'Akses Ditolak', message: 'Sandi atau Email salah!', type: 'error'}); }
+        });
+
+        document.getElementById('btn-logout')?.addEventListener('click', () => signOut(auth));
+
+        window.toggleFabMenu = () => {
+            const menu = document.getElementById('fab-menu'); const icon = document.getElementById('icon-fab'); const overlay = document.getElementById('fab-overlay');
+            if(!menu || !icon || !overlay) return;
+            if(menu.classList.contains('hidden')) {
+                menu.classList.remove('hidden'); overlay.classList.remove('hidden'); void menu.offsetWidth;
+                icon.style.transform = 'rotate(45deg)'; menu.classList.replace('scale-95', 'scale-100'); menu.classList.replace('opacity-0', 'opacity-100'); menu.classList.replace('translate-y-4', 'translate-y-0'); overlay.classList.replace('opacity-0', 'opacity-100');
+            } else {
+                icon.style.transform = 'rotate(0deg)'; menu.classList.replace('scale-100', 'scale-95'); menu.classList.replace('opacity-100', 'opacity-0'); menu.classList.replace('translate-y-0', 'translate-y-4'); overlay.classList.replace('opacity-100', 'opacity-0');
+                setTimeout(() => { menu.classList.add('hidden'); overlay.classList.add('hidden'); }, 300);
+            }
+        };
+
+        onAuthStateChanged(auth, (user) => {
+            currentUser = user;
+            document.body.classList.toggle('is-admin', !!user);
+            const loginBtn = document.getElementById('btn-login-trigger'); const logoutBtn = document.getElementById('btn-logout');
+            
+            if (user) { 
+                if(loginBtn) loginBtn.classList.add('hidden'); 
+                if(logoutBtn) logoutBtn.classList.remove('hidden'); 
+            } else { 
+                if(loginBtn) loginBtn.classList.remove('hidden'); 
+                if(logoutBtn) logoutBtn.classList.add('hidden'); 
+                if(document.getElementById('tab-settings')?.classList.contains('active')) showTab('tab-members', document.querySelector('.nav-btn'));
+            }
+
+            // Selalu mulai pendengar Live saat dimuat
+            initLiveHistory();
+            initLiveBKU();
+        });
+
+        function initLiveHistory() {
+            if (historyUnsub) historyUnsub();
+            document.getElementById('list-history').innerHTML = window.getSkeletonHTML('3col');
+
+            const q = query(collection(db, "shuttlecock_history"), orderBy("timestamp", "desc"), limit(FETCH_LIMIT));
+            historyUnsub = onSnapshot(q, (snap) => {
+                const newDocs = snap.docs.map(doc => ({ id: doc.id, docSnap: doc, ...doc.data() }));
+
+                // Seam Issue Fix: Mencegah data hilang saat terdorong keluar dari Top 15 live
+                if (liveHistoryData.length > 0) {
+                    const newIds = new Set(newDocs.map(d => d.id));
+                    const droppedItems = liveHistoryData.filter(oldDoc => !newIds.has(oldDoc.id));
+                    droppedItems.forEach(dropped => {
+                        if (!staticHistoryData.some(s => s.id === dropped.id)) staticHistoryData.push(dropped);
+                    });
+                }
+
+                // Tentukan kursor awal untuk Load More jika belum ada
+                if (!lastHistoryCursorSnap && snap.docs.length > 0) {
+                    lastHistoryCursorSnap = snap.docs[snap.docs.length - 1];
+                }
+
+                liveHistoryData = newDocs;
+                
+                // Toggle Tombol Load More berdasar jumlah awal
+                const btn = document.getElementById('btn-load-history');
+                if(btn) {
+                    if (liveHistoryData.length < FETCH_LIMIT && staticHistoryData.length === 0) btn.classList.add('hidden');
+                    else btn.classList.remove('hidden');
+                }
+
+                renderHistoryList();
+            }, (err) => console.error("Live History Error:", err));
+        }
+
+        window.loadMoreHistory = async () => {
+            if (!lastHistoryCursorSnap) return;
+            const btnLoad = document.getElementById('btn-load-history');
+            btnLoad.innerText = "Memuat..."; btnLoad.disabled = true;
+
+            try {
+                const q = query(collection(db, "shuttlecock_history"), orderBy("timestamp", "desc"), startAfter(lastHistoryCursorSnap), limit(FETCH_LIMIT));
+                const snap = await getDocs(q);
+
+                if (!snap.empty) {
+                    lastHistoryCursorSnap = snap.docs[snap.docs.length - 1];
+                    const staticDocs = snap.docs.map(doc => ({ id: doc.id, docSnap: doc, ...doc.data() }));
+                    
+                    staticDocs.forEach(d => {
+                        if (!staticHistoryData.some(s => s.id === d.id) && !liveHistoryData.some(l => l.id === d.id)) {
+                            staticHistoryData.push(d);
+                        }
+                    });
+
+                    if (snap.docs.length < FETCH_LIMIT) btnLoad.classList.add('hidden');
+                } else {
+                    btnLoad.classList.add('hidden');
+                }
+            } catch (e) { console.error(e); } 
+            finally {
+                btnLoad.innerText = "Muat Data Lama ↓"; btnLoad.disabled = false;
+                renderHistoryList();
+            }
+        };
+
+        function renderHistoryList() {
+            const list = document.getElementById('list-history');
+            if(!list) return;
+
+            // Gabungkan Live dan Static (Deduplikasi cerdas via Map)
+            const combinedMap = new Map();
+            staticHistoryData.forEach(d => combinedMap.set(d.id, d)); // Masukkan static dulu
+            liveHistoryData.forEach(d => combinedMap.set(d.id, d));   // Live menimpa static jika ada ID sama
+
+            const finalData = Array.from(combinedMap.values()).sort((a, b) => {
+                const timeA = a.timestamp?.toMillis ? a.timestamp.toMillis() : (a.timestamp || 0);
+                const timeB = b.timestamp?.toMillis ? b.timestamp.toMillis() : (b.timestamp || 0);
+                return timeB - timeA;
+            });
+
+            if(finalData.length === 0) {
+                list.innerHTML = '<p class="text-center text-xs text-slate-400 mt-4 italic">Belum ada aktivitas kok.</p>';
+                return;
+            }
+
+            let html = `<div class="overflow-hidden bg-white rounded-xl shadow-sm border border-slate-200"><table class="w-full text-left border-collapse"><thead><tr class="bg-slate-100/50 border-b border-slate-200 text-[9px] uppercase tracking-widest text-slate-500"><th class="py-2 px-2.5 font-bold whitespace-nowrap w-14">Waktu</th><th class="py-2 px-2.5 font-bold">Pemain & Info</th><th class="py-2 px-2.5 font-bold text-right whitespace-nowrap">Jml / Rp</th></tr></thead><tbody class="divide-y divide-slate-100">`;
+
+            html += finalData.map(d => {
+                const isU = d.type === 'USAGE';
+                let ds = '-'; let ts = '-';
+                if (d.timestamp) {
+                    const dObj = d.timestamp.toDate ? d.timestamp.toDate() : new Date(d.timestamp);
+                    ds = dObj.toLocaleDateString('id-ID', { day:'2-digit', month:'short' });
+                    ts = dObj.toLocaleTimeString('id-ID', { hour:'2-digit', minute:'2-digit' });
+                }
+                const nom = Math.abs(d.amount) * currentCockPrice;
+                const sign = d.amount > 0 ? '+' : '';
+                return `<tr class="transition active:bg-slate-50"><td class="py-2 px-2.5 align-top w-14"><div class="text-[10px] font-bold text-slate-700 leading-tight">${ds}</div><div class="text-[9px] font-semibold text-slate-400">${ts}</div></td><td class="py-2 px-2.5 align-top max-w-[130px]"><div class="font-bold text-[11px] text-slate-800 uppercase tracking-tight truncate leading-tight">${d.member_name || '-'}</div><div class="text-[9px] text-slate-500 mt-0.5 truncate italic">${d.note || '-'}</div></td><td class="py-2 px-2.5 align-top text-right"><div class="font-black text-[11px] ${isU ? 'text-rose-600' : 'text-emerald-600'} leading-tight">${sign}${d.amount} Kok</div><div class="text-[9px] font-mono font-bold text-slate-400 mt-0.5">${formatRupiahInput(nom.toString())}</div></td></tr>`;
+            }).join('');
+
+            html += `</tbody></table></div>`;
+            list.innerHTML = html;
+        }
+
+        function initLiveBKU() {
+            if (bkuUnsub) bkuUnsub();
+            document.getElementById('list-bku').innerHTML = window.getSkeletonHTML('3col');
+
+            const q = query(collection(db, "bku_transactions"), orderBy("timestamp", "desc"), limit(FETCH_LIMIT));
+            bkuUnsub = onSnapshot(q, (snap) => {
+                const newDocs = snap.docs.map(doc => ({ id: doc.id, docSnap: doc, ...doc.data() }));
+
+                if (liveBkuData.length > 0) {
+                    const newIds = new Set(newDocs.map(d => d.id));
+                    const droppedItems = liveBkuData.filter(oldDoc => !newIds.has(oldDoc.id));
+                    droppedItems.forEach(dropped => {
+                        if (!staticBkuData.some(s => s.id === dropped.id)) staticBkuData.push(dropped);
+                    });
+                }
+
+                if (!lastBkuCursorSnap && snap.docs.length > 0) lastBkuCursorSnap = snap.docs[snap.docs.length - 1];
+
+                liveBkuData = newDocs;
+                
+                const btn = document.getElementById('btn-load-bku');
+                if(btn) {
+                    if (liveBkuData.length < FETCH_LIMIT && staticBkuData.length === 0) btn.classList.add('hidden');
+                    else btn.classList.remove('hidden');
+                }
+
+                renderBKUList();
+            }, (err) => console.error("Live BKU Error:", err));
+        }
+
+        window.loadMoreBKU = async () => {
+            if (!lastBkuCursorSnap) return;
+            const btnLoad = document.getElementById('btn-load-bku');
+            btnLoad.innerText = "Memuat..."; btnLoad.disabled = true;
+
+            try {
+                const q = query(collection(db, "bku_transactions"), orderBy("timestamp", "desc"), startAfter(lastBkuCursorSnap), limit(FETCH_LIMIT));
+                const snap = await getDocs(q);
+
+                if (!snap.empty) {
+                    lastBkuCursorSnap = snap.docs[snap.docs.length - 1];
+                    const staticDocs = snap.docs.map(doc => ({ id: doc.id, docSnap: doc, ...doc.data() }));
+                    
+                    staticDocs.forEach(d => {
+                        if (!staticBkuData.some(s => s.id === d.id) && !liveBkuData.some(l => l.id === d.id)) staticBkuData.push(d);
+                    });
+
+                    if (snap.docs.length < FETCH_LIMIT) btnLoad.classList.add('hidden');
+                } else {
+                    btnLoad.classList.add('hidden');
+                }
+            } catch (e) { console.error(e); } 
+            finally {
+                btnLoad.innerText = "Muat Data Lama ↓"; btnLoad.disabled = false;
+                renderBKUList();
+            }
+        };
+
+        function renderBKUList() {
+            const list = document.getElementById('list-bku');
+            if(!list) return;
+
+            const combinedMap = new Map();
+            staticBkuData.forEach(d => combinedMap.set(d.id, d));
+            liveBkuData.forEach(d => combinedMap.set(d.id, d));
+
+            const finalData = Array.from(combinedMap.values()).sort((a, b) => {
+                const timeA = a.timestamp?.toMillis ? a.timestamp.toMillis() : (a.timestamp || 0);
+                const timeB = b.timestamp?.toMillis ? b.timestamp.toMillis() : (b.timestamp || 0);
+                return timeB - timeA;
+            });
+
+            if(finalData.length === 0) {
+                list.innerHTML = '<p class="text-center text-xs text-slate-400 mt-4 italic">Belum ada transaksi BKU.</p>';
+                return;
+            }
+
+            let html = `<div class="overflow-hidden bg-white rounded-xl shadow-sm border border-slate-200"><table class="w-full text-left border-collapse"><thead><tr class="bg-slate-100/50 border-b border-slate-200 text-[9px] uppercase tracking-widest text-slate-500"><th class="py-2 px-2.5 font-bold whitespace-nowrap w-14">Tanggal</th><th class="py-2 px-2.5 font-bold">Keterangan</th><th class="py-2 px-2.5 font-bold text-right whitespace-nowrap">Nominal</th></tr></thead><tbody class="divide-y divide-slate-100">`;
+
+            html += finalData.map(d => {
+                const isD = d.type === 'DEBIT';
+                let dateStr = '-';
+                if (d.timestamp) {
+                    const dObj = d.timestamp.toDate ? d.timestamp.toDate() : new Date(d.timestamp);
+                    dateStr = dObj.toLocaleDateString('id-ID', { day:'2-digit', month:'short' });
+                }
+                
+                const adminBtns = currentUser ? `<div class="admin-only flex gap-1 justify-end mt-1.5">${d.linked_history_id ? `<span class="p-1.5 text-slate-300" title="Dikunci: Edit transaksi ini melalui Tab LOG KOK"><svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg></span>` : `<button onclick="openEditTransaction('${d.id}', 'BKU')" class="p-1.5 bg-slate-50 rounded-lg text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 transition"><svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg></button><button onclick="adminDeleteBKU('${d.id}')" class="p-1.5 bg-slate-50 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-rose-50 transition"><svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>`}</div>` : '';
+
+                return `<tr class="transition active:bg-slate-50"><td class="py-2 px-2.5 align-top w-14"><div class="text-[10px] font-bold text-slate-700 leading-tight">${dateStr}</div><div class="text-[8px] font-black uppercase tracking-wider mt-0.5 ${isD ? 'text-emerald-500' : 'text-rose-500'}">${isD ? 'MASUK' : 'KELUAR'}</div></td><td class="py-2 px-2.5 align-top max-w-[130px]"><div class="font-bold text-[10px] text-slate-800 uppercase tracking-tight leading-tight">${d.category}</div><div class="text-[9px] text-slate-500 mt-0.5 break-words italic leading-tight">${d.note || '-'}</div></td><td class="py-2 px-2.5 align-top text-right"><div class="font-black text-[11px] ${isD ? 'text-emerald-600' : 'text-rose-600'} leading-tight">${isD ? '+' : '-'}${formatRupiahInput(d.amount.toString())}</div>${adminBtns}</td></tr>`;
+            }).join('');
+
+            html += `</tbody></table></div>`;
+            list.innerHTML = html;
+        }
+
+        onSnapshot(collection(db, "members"), (snap) => {
+            allMembers = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+            document.getElementById('display-member-count').innerText = allMembers.length + " Orang";
+            
+            let totalT = 0;
+            const list = document.getElementById('list-members');
+            if(list) {
+                if(allMembers.length === 0) list.innerHTML = '<p class="text-center text-xs text-slate-400 mt-4 italic">Belum ada anggota terdaftar.</p>';
+                else {
+                    let html = `<div class="overflow-hidden bg-white rounded-xl shadow-sm border border-slate-200"><table class="w-full text-left border-collapse"><thead><tr class="bg-slate-100/50 border-b border-slate-200 text-[9px] uppercase tracking-widest text-slate-500"><th class="py-2 px-3 font-bold">Nama Anggota</th><th class="py-2 px-3 font-bold text-right whitespace-nowrap">Saldo (Kok/Rp)</th></tr></thead><tbody class="divide-y divide-slate-100">`;
+                    html += allMembers.sort((a,b) => a.name.localeCompare(b.name)).map(m => {
+                        const isN = m.shuttlecock_balance < 0; 
+                        if(isN) totalT += Math.abs(m.shuttlecock_balance);
+                        return `<tr onclick="openMemberProfile('${m.id}')" class="transition active:bg-slate-50 cursor-pointer hover:bg-slate-50/50 member-card"><td class="py-2.5 px-3 align-middle max-w-[150px]"><div class="font-bold text-[11px] text-slate-800 tracking-tight uppercase truncate leading-tight">${m.name.toUpperCase()}</div></td><td class="py-2.5 px-3 align-middle text-right"><div class="font-black text-[12px] ${isN ? 'text-rose-600' : 'text-emerald-600'} leading-tight">${m.shuttlecock_balance} Kok</div><div class="text-[9px] font-mono font-bold ${isN ? 'text-rose-400' : 'text-slate-400'} mt-0.5">Rp ${formatRupiahInput((m.shuttlecock_balance * currentCockPrice).toString())}</div></td></tr>`;
+                    }).join('');
+                    html += `</tbody></table></div>`;
+                    list.innerHTML = html;
+                }
+            }
+            document.getElementById('display-total-tekor-nominal').innerText = "Rp " + formatRupiahInput((totalT * currentCockPrice).toString());
+            renderAdminUI();
+        });
+
+        onSnapshot(doc(db, "metadata", "stats"), (ds) => {
+            if(ds.exists()) {
+                const data = ds.data();
+                currentCockPrice = data.shuttlecock_price || 3000;
+                document.getElementById('display-cock-price').innerText = "@" + formatRupiahInput(currentCockPrice.toString()) + " / KOK";
+                
+                const sP = document.getElementById('input-setting-price');
+                if(sP && sP.value === "") sP.value = formatRupiahInput(currentCockPrice.toString());
+                
+                document.getElementById('display-bku-total').innerText = "Rp " + formatRupiahInput((data.total_balance_bku || 0).toString()); 
+                document.getElementById('display-bku-income').innerText = "Rp " + formatRupiahInput((data.total_income_bku || 0).toString());
+                document.getElementById('display-bku-expense').innerText = "Rp " + formatRupiahInput((data.total_expense_bku || 0).toString());
+            }
+        });
+
+        window.actionSaveSettings = async () => {
+            if (!currentUser) return appDialog({title: 'Ditolak', message: 'Hanya Admin.', type: 'error'});
+            const np = parseRupiahInt(document.getElementById('input-setting-price').value);
+            if(isNaN(np) || np <= 0) return appDialog({title: 'Peringatan', message: 'Harga tidak valid!', type: 'warning'});
+            try { await updateDoc(doc(db, "metadata", "stats"), { shuttlecock_price: np }); appDialog({title: 'Sukses', message: 'Harga diperbarui!', type: 'success'}); } 
+            catch (e) { appDialog({title: 'Error', message: e.message, type: 'error'}); }
+        };
+
+        function renderAdminUI() {
+            const ms = document.getElementById('admin-multi-select');
+            if(ms) ms.innerHTML = allMembers.map(m => `<label class="flex-shrink-0 cursor-pointer"><input type="checkbox" name="usage-member" value="${m.id}|${m.name}" class="hidden peer" onchange="updateUsagePreview()"><div class="px-5 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-[11px] font-black text-slate-400 peer-checked:bg-rose-500 peer-checked:text-white peer-checked:border-rose-500 transition-all uppercase tracking-widest shadow-sm active:scale-95">${m.name.toUpperCase()}</div></label>`).join('');
+            const gds = document.getElementById('select-global-deposit-member');
+            if(gds) gds.innerHTML = `<option value="">Pilih Anggota</option>` + allMembers.map(m => `<option value="${m.id}|${m.name}">${m.name.toUpperCase()}</option>`).join('');
+        }
+
+        window.updateUsagePreview = () => {
+            const sel = Array.from(document.querySelectorAll('input[name="usage-member"]:checked'));
+            const p = document.getElementById('usage-preview-chips');
+            if (!p) return;
+            if (sel.length === 0) p.innerHTML = '<span class="text-[10px] font-bold text-slate-300 italic">Belum ada pemain terpilih</span>';
+            else p.innerHTML = `<span class="text-[11px] font-bold text-rose-600 leading-relaxed">${sel.map(e => e.value.split('|')[1]).join(', ').toUpperCase()}</span>`;
+        };
+
+        window.openAddMemberModal = () => document.getElementById('modal-add-member').classList.remove('hidden');
+        window.closeAddMemberModal = () => { document.getElementById('modal-add-member').classList.add('hidden'); document.getElementById('input-new-member').value = ""; };
+        window.actionAddMember = async () => {
+            if (!currentUser) return;
+            const i = document.getElementById('input-new-member'); if(!i.value) return;
+            try { await setDoc(doc(db, "members", Date.now().toString()), { name: i.value.toUpperCase(), shuttlecock_balance: 0, created_at: serverTimestamp() }); closeAddMemberModal(); showTab('tab-members', document.querySelectorAll('.nav-btn')[0]); appDialog({title: 'Sukses', message: 'Anggota Ditambahkan!', type: 'success'}); } 
+            catch (e) { appDialog({title: 'Error', message: e.message, type: 'error'}); }
+        };
+
+        window.openMemberProfile = (id) => {
+            const m = allMembers.find(x => x.id === id); if (!m) return;
+            currentProfileMemberId = id;
+            document.getElementById('profile-member-id').value = m.id; document.getElementById('profile-name').innerText = m.name; document.getElementById('profile-balance').innerText = `${m.shuttlecock_balance} Kok`;
+            const f = document.getElementById('profile-deposit-form'); const ip = document.getElementById('icon-plus'); const im = document.getElementById('icon-minus');
+            if(f) f.classList.add('hidden'); if(ip) ip.classList.remove('hidden'); if(im) im.classList.add('hidden');
+            document.getElementById('input-deposit-qty').value = ""; document.getElementById('input-deposit-nominal').value = ""; document.getElementById('deposit-kembalian').innerText = "Rp 0";
+            if(document.getElementById('check-donate-deposit')) document.getElementById('check-donate-deposit').checked = false;
+            fetchMemberHistory(id); document.getElementById('modal-member-profile').classList.remove('hidden');
+        };
+        window.closeMemberProfile = () => { currentProfileMemberId = null; document.getElementById('modal-member-profile').classList.add('hidden'); };
+        window.toggleProfileDepositForm = () => {
+            if (!currentUser) return;
+            const f = document.getElementById('profile-deposit-form'); const ip = document.getElementById('icon-plus'); const im = document.getElementById('icon-minus');
+            if (f) { const h = f.classList.toggle('hidden'); if(ip) ip.classList.toggle('hidden', !h); if(im) im.classList.toggle('hidden', h); }
+        };
+
+        window.fetchMemberHistory = async (id) => {
+            const list = document.getElementById('profile-history-list'); if(!list) return;
+            list.innerHTML = window.getSkeletonHTML('profile');
+            try {
+                const snap = await getDocs(query(collection(db, "shuttlecock_history"), where("member_id", "==", id), orderBy("timestamp", "desc"), limit(10)));
+                const data = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                if(data.length === 0) list.innerHTML = '<p class="text-center text-[10px] text-slate-400 mt-4 italic">Belum ada riwayat tercatat.</p>';
+                else list.innerHTML = data.map(d => `<div class="bg-slate-50/50 p-3 rounded-xl border border-slate-100 flex items-center justify-between gap-3"><div class="flex-1 min-w-0"><div class="flex items-center gap-2"><span class="px-1.5 py-0.5 rounded text-[8px] font-black uppercase ${d.type === 'USAGE' ? 'bg-rose-100 text-rose-600' : 'bg-emerald-100 text-emerald-600'}">${d.type}</span><span class="text-[9px] font-bold text-slate-400">${d.timestamp ? (d.timestamp.toDate ? d.timestamp.toDate() : new Date(d.timestamp)).toLocaleDateString('id-ID',{day:'numeric',month:'short'}) : '-'}</span></div><p class="text-[10px] font-semibold text-slate-700 mt-1 truncate">${d.note || '-'}</p></div><div class="text-right shrink-0"><p class="font-black text-xs ${d.type === 'USAGE' ? 'text-rose-600' : 'text-emerald-600'}">${d.amount > 0 ? '+'+d.amount : d.amount} Kok</p>${currentUser ? `<div class="admin-only flex gap-1 mt-1 justify-end"><button onclick="openEditTransaction('${d.id}', 'HISTORY')" class="p-1.5 bg-slate-100 rounded-lg text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 transition"><svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg></button><button onclick="adminDeleteShuttlecock('${d.id}', '${d.type}')" class="p-1.5 bg-slate-100 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-rose-50 transition"><svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button></div>` : ''}</div></div>`).join('');
+            } catch (e) { list.innerHTML = `<p class="text-center text-[10px] text-rose-500 mt-4 font-bold">⚠️ Gagal Memuat Riwayat</p>`; }
+        };
+
+        window.triggerEditName = () => adminEditMemberName(document.getElementById('profile-member-id').value, document.getElementById('profile-name').innerText);
+        window.adminEditMemberName = async (id, old) => {
+            if (!currentUser) return;
+            const n = await appDialog({title: 'Ubah Nama', message: 'Masukkan nama anggota baru:', type: 'prompt', inputValue: old});
+            if(n && n !== old) {
+                try { await updateDoc(doc(db, "members", id), { name: n.toUpperCase() }); document.getElementById('profile-name').innerText = n.toUpperCase(); appDialog({title: 'Berhasil', message: 'Nama diperbarui.', type: 'success'}); } 
+                catch (e) { appDialog({title: 'Error', message: e.message, type: 'error'}); }
+            }
+        };
+
+        window.openGlobalDepositModal = () => document.getElementById('modal-global-deposit').classList.remove('hidden');
+        window.closeGlobalDepositModal = () => { document.getElementById('modal-global-deposit').classList.add('hidden'); document.getElementById('input-global-deposit-qty').value = ""; document.getElementById('input-global-deposit-nominal').value = ""; document.getElementById('global-deposit-kembalian').innerText = "Rp 0"; document.getElementById('select-global-deposit-member').value = ""; if(document.getElementById('check-donate-global-deposit')) document.getElementById('check-donate-global-deposit').checked = false; };
+
+        async function performDepositLogic(id, n, qty, nF, isD, closeFn) {
+            const cost = qty * currentCockPrice; const kemb = nF - cost; const donasi = (isD && kemb > 0) ? kemb : 0; const MY = getMonthYearStr(null);
+            try {
+                const b = writeBatch(db); const hRef = doc(collection(db, "shuttlecock_history")); const bRef = doc(collection(db, "bku_transactions"));
+                b.update(doc(db, "members", id), { shuttlecock_balance: increment(qty) });
+                b.set(hRef, { member_id: id, member_name: n, type: "DEPOSIT", amount: qty, note: "Deposit " + n, linked_bku_id: bRef.id, month_year: MY, timestamp: serverTimestamp() });
+                b.set(bRef, { type: "DEBIT", category: "DEPOSIT KOK", amount: cost, note: "Deposit " + n, linked_history_id: hRef.id, month_year: MY, timestamp: serverTimestamp() });
+                let totIn = cost;
+                if (donasi > 0) { const dRef = doc(collection(db, "bku_transactions")); b.set(dRef, { type: "DEBIT", category: "DONASI / SUMBANGAN", amount: donasi, note: "Sisa kembalian deposit " + n, month_year: MY, timestamp: serverTimestamp() }); totIn += donasi; }
+                b.update(doc(db, "metadata", "stats"), { total_balance_bku: increment(totIn), total_income_bku: increment(totIn) });
+                await b.commit(); closeFn(); showTab('tab-members', document.querySelectorAll('.nav-btn')[0]);
+                
+                let msg = `Deposit ${qty} Kok tercatat!`; if (donasi > 0) msg += `\nSisa Rp ${formatRupiahInput(donasi.toString())} masuk sbg Donasi.`;
+                appDialog({title: 'Berhasil', message: msg, type: 'success'}); 
+            } catch (e) { appDialog({title: 'Error', message: e.message, type: 'error'}); }
+        }
+
+        window.actionSubmitGlobalDeposit = async () => {
+            if (!currentUser) return;
+            const md = document.getElementById('select-global-deposit-member').value; const qty = parseInt(document.getElementById('input-global-deposit-qty').value); const nF = parseRupiahInt(document.getElementById('input-global-deposit-nominal').value) || 0; const isD = document.getElementById('check-donate-global-deposit').checked;
+            if(!md || isNaN(qty) || qty <= 0) return appDialog({title: 'Peringatan', message: 'Input tidak valid!', type: 'warning'});
+            const [id, n] = md.split('|'); await performDepositLogic(id, n, qty, nF, isD, closeGlobalDepositModal);
+        };
+        window.actionSubmitDeposit = async () => {
+            if (!currentUser) return;
+            const id = document.getElementById('profile-member-id').value; const n = document.getElementById('profile-name').innerText; const qty = parseInt(document.getElementById('input-deposit-qty').value); const nF = parseRupiahInt(document.getElementById('input-deposit-nominal').value) || 0; const isD = document.getElementById('check-donate-deposit').checked;
+            if(!id || isNaN(qty) || qty <= 0) return appDialog({title: 'Peringatan', message: 'Input tidak valid!', type: 'warning'});
+            await performDepositLogic(id, n, qty, nF, isD, closeMemberProfile);
+        };
+
+        window.openUsageModal = () => { document.getElementById('input-usage-date').valueAsDate = new Date(); updateUsagePreview(); document.getElementById('modal-usage').classList.remove('hidden'); };
+        window.closeUsageModal = () => { document.getElementById('modal-usage').classList.add('hidden'); document.querySelectorAll('input[name="usage-member"]').forEach(c => c.checked = false); updateUsagePreview(); document.getElementById('input-usage-amount').value = "2"; document.getElementById('input-usage-note').value = ""; };
+        window.actionSubmitUsage = async () => {
+            if (!currentUser) return;
+            const sel = Array.from(document.querySelectorAll('input[name="usage-member"]:checked')); const amt = parseInt(document.getElementById('input-usage-amount').value); const dv = document.getElementById('input-usage-date').value;
+            if(!sel.length || isNaN(amt) || !dv) return appDialog({title: 'Peringatan', message: 'Pilih pemain & tanggal!', type: 'warning'});
+            try {
+                const b = writeBatch(db); const td = processRealtimeDate(dv); const MY = getMonthYearStr(dv); 
+                sel.forEach(el => { const [id, n] = el.value.split('|'); b.update(doc(db, "members", id), { shuttlecock_balance: increment(-amt) }); b.set(doc(collection(db, "shuttlecock_history")), { member_id: id, member_name: n, type: "USAGE", amount: -amt, note: document.getElementById('input-usage-note').value || "Bermain", month_year: MY, timestamp: td }); });
+                await b.commit(); closeUsageModal(); showTab('tab-history', document.querySelectorAll('.nav-btn')[1]);
+                appDialog({title: 'Berhasil', message: 'Data Pemakaian Tersimpan!', type: 'success'}); 
+            } catch (e) { appDialog({title: 'Error', message: e.message, type: 'error'}); }
+        };
+
+        window.openKasModal = () => { document.getElementById('input-income-date').valueAsDate = new Date(); document.getElementById('input-expense-date').valueAsDate = new Date(); document.getElementById('modal-kas').classList.remove('hidden'); }
+        window.closeKasModal = () => { document.getElementById('modal-kas').classList.add('hidden'); switchKasTab('INCOME'); document.getElementById('input-income-amount').value = ""; document.getElementById('input-income-note').value = ""; document.getElementById('input-expense-amount').value = ""; document.getElementById('input-expense-note').value = ""; };
+        window.switchKasTab = (t) => {
+            const bI = document.getElementById('btn-kas-income'); const bE = document.getElementById('btn-kas-expense'); const fI = document.getElementById('form-income'); const fE = document.getElementById('form-expense');
+            if(t === 'INCOME') { bI.className = "flex-1 py-3 text-[10px] font-black uppercase tracking-widest rounded-xl bg-white shadow-sm text-blue-600 transition"; bE.className = "flex-1 py-3 text-[10px] font-black uppercase tracking-widest rounded-xl text-slate-400 transition hover:text-slate-600"; fI.classList.remove('hidden'); fE.classList.add('hidden'); } 
+            else { bE.className = "flex-1 py-3 text-[10px] font-black uppercase tracking-widest rounded-xl bg-white shadow-sm text-rose-600 transition"; bI.className = "flex-1 py-3 text-[10px] font-black uppercase tracking-widest rounded-xl text-slate-400 transition hover:text-slate-600"; fE.classList.remove('hidden'); fI.classList.add('hidden'); }
+        };
+        window.actionSubmitIncome = async () => {
+            if (!currentUser) return;
+            const d = document.getElementById('input-income-date').value; const c = document.getElementById('input-income-category').value; const amt = parseRupiahInt(document.getElementById('input-income-amount').value); const n = document.getElementById('input-income-note').value;
+            if(!d || isNaN(amt) || amt <= 0 || !n) return appDialog({title: 'Peringatan', message: 'Input tidak lengkap!', type: 'warning'});
+            try { const b = writeBatch(db); b.set(doc(collection(db, "bku_transactions")), { type: "DEBIT", category: c, amount: amt, note: n, month_year: getMonthYearStr(d), timestamp: processRealtimeDate(d) }); b.update(doc(db, "metadata", "stats"), { total_balance_bku: increment(amt), total_income_bku: increment(amt) }); await b.commit(); closeKasModal(); showTab('tab-bku', document.querySelectorAll('.nav-btn')[2]); appDialog({title: 'Berhasil', message: 'Kas Dicatat!', type: 'success'}); } catch (e) { appDialog({title: 'Error', message: e.message, type: 'error'}); }
+        };
+        window.actionSubmitExpense = async () => {
+            if (!currentUser) return;
+            const d = document.getElementById('input-expense-date').value; const c = document.getElementById('input-expense-category').value; const amt = parseRupiahInt(document.getElementById('input-expense-amount').value); const n = document.getElementById('input-expense-note').value;
+            if(!d || isNaN(amt) || amt <= 0) return appDialog({title: 'Peringatan', message: 'Input tidak lengkap!', type: 'warning'});
+            try { const b = writeBatch(db); b.set(doc(collection(db, "bku_transactions")), { type: "CREDIT", category: c, amount: amt, note: n || "Operasional", month_year: getMonthYearStr(d), timestamp: processRealtimeDate(d) }); b.update(doc(db, "metadata", "stats"), { total_balance_bku: increment(-amt), total_expense_bku: increment(amt) }); await b.commit(); closeKasModal(); showTab('tab-bku', document.querySelectorAll('.nav-btn')[2]); appDialog({title: 'Berhasil', message: 'Pengeluaran Berhasil!', type: 'success'}); } catch(e) { appDialog({title: 'Error', message: e.message, type: 'error'}); }
+        };
+
+        window.closeEditModal = () => document.getElementById('modal-edit').classList.add('hidden');
+        window.openEditTransaction = async (id, type) => {
+            const col = type === 'HISTORY' ? 'shuttlecock_history' : 'bku_transactions';
+            try {
+                const s = await getDoc(doc(db, col, id)); if(!s.exists()) return; const d = s.data();
+                if (type === 'BKU' && d.linked_history_id) return appDialog({title: '⚠️ Proteksi Sistem', message: 'Edit transaksi ini melalui Tab LOG KOK.', type: 'error'});
+                document.getElementById('edit-target-id').value = id; document.getElementById('edit-target-type').value = type; document.getElementById('edit-val-note').value = d.note || (d.type === 'DEPOSIT' ? "Deposit " + d.member_name : "");
+                if(type === 'HISTORY') { document.getElementById('edit-val-amount').value = Math.abs(d.amount); document.getElementById('edit-label-amount').innerText = "Jumlah Kok Baru"; document.getElementById('edit-calc-display').classList.remove('hidden'); document.getElementById('edit-context-box').classList.remove('hidden'); document.getElementById('edit-context-text').innerText = `👤 Member: ${d.member_name}`; document.getElementById('edit-live-nominal').innerText = "Rp " + formatRupiahInput((Math.abs(d.amount) * currentCockPrice).toString()); } 
+                else { document.getElementById('edit-val-amount').value = formatRupiahInput(Math.abs(d.amount).toString()); document.getElementById('edit-label-amount').innerText = "Nominal Rupiah Baru"; document.getElementById('edit-calc-display').classList.add('hidden'); document.getElementById('edit-context-box').classList.remove('hidden'); document.getElementById('edit-context-text').innerText = `📂 Transaksi Kas: ${d.category}`; }
+                document.getElementById('modal-edit').classList.remove('hidden');
+            } catch (e) { alert(e.message); }
+        };
+
+        const eVA = document.getElementById('edit-val-amount');
+        if(eVA) eVA.oninput = (e) => { if(document.getElementById('edit-target-type').value === 'HISTORY') document.getElementById('edit-live-nominal').innerText = "Rp " + formatRupiahInput((parseRupiahInt(e.target.value) * currentCockPrice).toString()); else e.target.value = formatRupiahInput(e.target.value); };
+
+        window.processUpdateTransaction = async () => {
+            if (!currentUser) return;
+            const id = document.getElementById('edit-target-id').value; const type = document.getElementById('edit-target-type').value; const nA = parseRupiahInt(document.getElementById('edit-val-amount').value); const nN = document.getElementById('edit-val-note').value;
+            if(isNaN(nA)) return;
+            try {
+                const col = type === 'HISTORY' ? 'shuttlecock_history' : 'bku_transactions'; const s = await getDoc(doc(db, col, id)); if(!s.exists()) return; const d = s.data(); const b = writeBatch(db);
+                if(type === 'HISTORY') {
+                    const actN = d.type === 'USAGE' ? -nA : nA; const delta = actN - d.amount; b.update(doc(db, "members", d.member_id), { shuttlecock_balance: increment(delta) });
+                    if(d.type === 'DEPOSIT') { if (d.linked_bku_id) { const bSnap = await getDoc(doc(db, "bku_transactions", d.linked_bku_id)); if(bSnap.exists()) { const dC = (nA * currentCockPrice) - bSnap.data().amount; b.update(doc(db, "metadata", "stats"), { total_balance_bku: increment(dC), total_income_bku: increment(dC) }); b.update(doc(db, "bku_transactions", d.linked_bku_id), { amount: nA * currentCockPrice, note: nN }); } } else { const mD = delta * currentCockPrice; b.update(doc(db, "metadata", "stats"), { total_balance_bku: increment(mD), total_income_bku: increment(mD) }); } }
+                    b.update(doc(db, col, id), { amount: actN, note: nN });
+                    // Sync array statis jika diedit dari sana
+                    const idx = staticHistoryData.findIndex(x => x.id === id); if(idx !== -1) { staticHistoryData[idx].amount = actN; staticHistoryData[idx].note = nN; renderHistoryList(); }
+                } else {
+                    const delta = nA - d.amount; if (d.type === 'DEBIT') b.update(doc(db, "metadata", "stats"), { total_balance_bku: increment(delta), total_income_bku: increment(delta) }); else b.update(doc(db, "metadata", "stats"), { total_balance_bku: increment(-delta), total_expense_bku: increment(delta) });
+                    b.update(doc(db, col, id), { amount: nA, note: nN });
+                    // Sync array statis
+                    const idx = staticBkuData.findIndex(x => x.id === id); if(idx !== -1) { staticBkuData[idx].amount = nA; staticBkuData[idx].note = nN; renderBKUList(); }
+                }
+                await b.commit(); closeEditModal();
+                if(currentProfileMemberId && type === 'HISTORY') fetchMemberHistory(currentProfileMemberId);
+                appDialog({title: 'Berhasil', message: 'Koreksi berhasil!', type: 'success'});
+            } catch (e) { appDialog({title: 'Error', message: e.message, type: 'error'}); }
+        };
+
+        window.adminDeleteShuttlecock = async (id, type) => {
+            if (!currentUser) return;
+            const confirmed = await appDialog({title: 'Konfirmasi Hapus', message: 'Hapus data log ini?', type: 'confirm'}); if(!confirmed) return;
+            try {
+                const s = await getDoc(doc(db, "shuttlecock_history", id)); if(!s.exists()) return; const d = s.data(); const b = writeBatch(db);
+                b.update(doc(db, "members", d.member_id), { shuttlecock_balance: increment(-d.amount) });
+                if(type==='DEPOSIT') { if (d.linked_bku_id) { const bSnap = await getDoc(doc(db, "bku_transactions", d.linked_bku_id)); if(bSnap.exists()) { const eR = -bSnap.data().amount; b.update(doc(db, "metadata", "stats"), { total_balance_bku: increment(eR), total_income_bku: increment(eR) }); b.delete(doc(db, "bku_transactions", d.linked_bku_id)); } } else { const rev = -(d.amount * currentCockPrice); b.update(doc(db, "metadata", "stats"), { total_balance_bku: increment(rev), total_income_bku: increment(rev) }); } }
+                b.delete(doc(db, "shuttlecock_history", id)); await b.commit();
+                
+                // Sync statis array (hapus item)
+                staticHistoryData = staticHistoryData.filter(x => x.id !== id); renderHistoryList();
+                if(currentProfileMemberId) fetchMemberHistory(currentProfileMemberId);
+                appDialog({title: 'Terhapus', message: 'Log dihapus!', type: 'success'});
+            } catch (e) { appDialog({title: 'Error', message: e.message, type: 'error'}); }
+        };
+
+        window.adminDeleteBKU = async (id) => {
+            if (!currentUser) return;
+            try {
+                const s = await getDoc(doc(db, "bku_transactions", id)); if(!s.exists()) return; const d = s.data();
+                if (d.linked_history_id) return appDialog({title: '⚠️ Proteksi', message: 'Hapus deposit ini melalui Tab LOG KOK.', type: 'error'});
+                const confirmed = await appDialog({title: 'Konfirmasi Hapus', message: 'Hapus data kas ini?', type: 'confirm'}); if(!confirmed) return;
+                const b = writeBatch(db);
+                if (d.type === 'DEBIT') b.update(doc(db, "metadata", "stats"), { total_balance_bku: increment(-d.amount), total_income_bku: increment(-d.amount) }); else b.update(doc(db, "metadata", "stats"), { total_balance_bku: increment(d.amount), total_expense_bku: increment(-d.amount) });
+                b.delete(doc(db, "bku_transactions", id)); await b.commit();
+                
+                // Sync statis array
+                staticBkuData = staticBkuData.filter(x => x.id !== id); renderBKUList();
+                appDialog({title: 'Terhapus', message: 'Data kas dihapus!', type: 'success'});
+            } catch (e) { appDialog({title: 'Error', message: e.message, type: 'error'}); }
+        };
+
+        window.actionSinkronKas = async () => {
+            if (!currentUser) return;
+            const kw = "SINKRON BKU"; const konf = await appDialog({title: 'SINKRONISASI', message: `Menghitung ulang saldo BKU dari nol.\nKetik: "${kw}"`, type: 'prompt'});
+            if (konf !== kw) return konf !== null && appDialog({title: 'Batal', message: 'Kata kunci salah.', type: 'error'});
+            
+            const lUI = document.getElementById('loading-overlay'); document.getElementById('loading-title').innerText = "MENGHITUNG ULANG KAS..."; lUI.classList.remove('hidden');
+            try {
+                const snap = await getDocs(collection(db, "bku_transactions")); let inC = 0, exC = 0;
+                snap.docs.forEach(d => { const dt = d.data(); if (dt.type === 'DEBIT') inC += dt.amount; else if (dt.type === 'CREDIT') exC += dt.amount; });
+                await updateDoc(doc(db, "metadata", "stats"), { total_income_bku: inC, total_expense_bku: exC, total_balance_bku: inC - exC });
+                lUI.classList.add('hidden'); appDialog({title: 'Sukses', message: `Tersinkron:\nIn: ${inC}\nEx: ${exC}\nSal: ${inC-exC}`, type: 'success'});
+            } catch (e) { lUI.classList.add('hidden'); appDialog({title: 'Error', message: e.message, type: 'error'}); }
+        };
+
+        window.actionTutupBuku = async () => {
+            if (!currentUser) return;
+            const kw = `TUTUP BUKU ${new Date().getFullYear()}`; const konf = await appDialog({title: 'PERINGATAN!', message: `Log akan diarsip dan dihapus permanen.\nKetik: "${kw}"`, type: 'prompt'});
+            if (konf !== kw) return konf !== null && appDialog({title: 'Batal', message: 'Sandi salah.', type: 'error'});
+            
+            const lUI = document.getElementById('loading-overlay'); document.getElementById('loading-title').innerText = "SEDANG TUTUP BUKU..."; lUI.classList.remove('hidden');
+            try {
+                const stSnap = await getDoc(doc(db, "metadata", "stats")); const st = stSnap.exists() ? stSnap.data() : {total_income_bku:0,total_expense_bku:0,total_balance_bku:0};
+                const mbSnap = await getDocs(collection(db, "members")); const mData = mbSnap.docs.map(d => ({id: d.id, ...d.data()}));
+                
+                const fBatch = writeBatch(db); const ts = serverTimestamp(); const aName = "Periode s/d " + new Date().toLocaleDateString('id-ID', { day:'2-digit', month:'short', year:'numeric' });
+                fBatch.set(doc(collection(db, "archives_period")), { period_name: aName, total_income: st.total_income_bku||0, total_expense: st.total_expense_bku||0, final_balance: st.total_balance_bku||0, member_snapshots: mData.map(m => ({name: m.name, balance: m.shuttlecock_balance||0})), timestamp: ts });
+
+                const delBatches = async (col) => { let q = query(collection(db, col), limit(400)); let s = await getDocs(q); while (!s.empty) { const b = writeBatch(db); s.docs.forEach(d => b.delete(d.ref)); await b.commit(); s = await getDocs(q); } };
+                await delBatches("shuttlecock_history"); await delBatches("bku_transactions");
+
+                const nIn = st.total_balance_bku > 0 ? st.total_balance_bku : 0; const nEx = st.total_balance_bku < 0 ? Math.abs(st.total_balance_bku) : 0;
+                fBatch.update(doc(db, "metadata", "stats"), { total_income_bku: nIn, total_expense_bku: nEx });
+                
+                if (st.total_balance_bku !== 0) fBatch.set(doc(collection(db, "bku_transactions")), { type: st.total_balance_bku > 0 ? "DEBIT" : "CREDIT", category: "SALDO AWAL", amount: Math.abs(st.total_balance_bku), note: `Saldo bawaan ${aName}`, month_year: getMonthYearStr(null), timestamp: ts });
+                mData.forEach(m => { if (m.shuttlecock_balance !== 0) fBatch.set(doc(collection(db, "shuttlecock_history")), { member_id: m.id, member_name: m.name, type: m.shuttlecock_balance > 0 ? "DEPOSIT" : "USAGE", amount: m.shuttlecock_balance, note: `Saldo bawaan ${aName}`, month_year: getMonthYearStr(null), timestamp: ts }); });
+                
+                await fBatch.commit();
+                
+                // BERSIHKAN STATIS ARRAY SETELAH TUTUP BUKU
+                staticHistoryData = []; staticBkuData = []; lastHistoryCursorSnap = null; lastBkuCursorSnap = null;
+                renderHistoryList(); renderBKUList();
+                
+                lUI.classList.add('hidden'); appDialog({title: 'Sukses', message: 'Tutup Buku Selesai.', type: 'success'});
+            } catch (e) { lUI.classList.add('hidden'); appDialog({title: 'Error', message: e.message, type: 'error'}); }
+        };
+
+        let globalArchivesMap = {};
+        window.openArchiveDetail = (id) => {
+            const d = globalArchivesMap[id]; if(!d) return;
+            document.getElementById('archive-detail-subtitle').innerText = d.period_name; const l = document.getElementById('archive-detail-list');
+            if (!d.member_snapshots || d.member_snapshots.length === 0) l.innerHTML = '<tr><td colspan="2" class="py-4 text-center text-[10px] text-slate-400 italic">Tidak ada data anggota tercatat.</td></tr>';
+            else l.innerHTML = d.member_snapshots.sort((a,b) => a.name.localeCompare(b.name)).map(m => `<tr class="transition hover:bg-slate-50"><td class="py-2.5 px-3 align-middle max-w-[150px]"><div class="font-bold text-[11px] text-slate-800 tracking-tight uppercase truncate leading-tight">${m.name.toUpperCase()}</div></td><td class="py-2.5 px-3 align-middle text-right"><div class="font-black text-[12px] ${m.balance < 0 ? 'text-rose-600' : 'text-emerald-600'} leading-tight">${m.balance} Kok</div></td></tr>`).join('');
+            document.getElementById('modal-archive-detail').classList.remove('hidden');
+        };
+        window.closeArchiveDetail = () => document.getElementById('modal-archive-detail').classList.add('hidden');
+        
+        window.actionDeleteArchive = async (id) => {
+            if (!currentUser) return;
+            const c = await appDialog({title: 'Hapus Arsip', message: 'Hapus arsip ini permanen?', type: 'confirm'}); if (!c) return;
+            try { await deleteDoc(doc(db, "archives_period", id)); appDialog({title: 'Terhapus', message: 'Arsip dihapus!', type: 'success'}); } 
+            catch (e) { appDialog({title: 'Error', message: e.message, type: 'error'}); }
+        };
+
+        onSnapshot(query(collection(db, "archives_period"), orderBy("timestamp", "desc")), (snap) => {
+            const l = document.getElementById('list-archives'); if(!l) return;
+            if (snap.empty) { l.innerHTML = '<p class="text-center text-[10px] text-slate-400 italic">Belum ada arsip.</p>'; return; }
+            globalArchivesMap = {};
+            l.innerHTML = snap.docs.map(doc => {
+                const d = doc.data(); globalArchivesMap[doc.id] = d;
+                return `<div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-sm"><div class="flex justify-between items-start mb-2 border-b border-slate-100 pb-2"><h4 class="text-[11px] font-black text-slate-700 uppercase tracking-tight leading-tight pt-1">${d.period_name}</h4><button onclick="actionDeleteArchive('${doc.id}')" class="p-1.5 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition active:scale-90" title="Hapus Arsip"><svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button></div><div class="grid grid-cols-2 gap-2 text-[10px]"><div><p class="text-slate-400 font-bold uppercase tracking-widest text-[8px] mb-0.5">Pemasukan</p><p class="font-black text-blue-600 truncate">Rp ${formatRupiahInput((d.total_income||0).toString())}</p></div><div><p class="text-slate-400 font-bold uppercase tracking-widest text-[8px] mb-0.5">Pengeluaran</p><p class="font-black text-rose-600 truncate">Rp ${formatRupiahInput((d.total_expense||0).toString())}</p></div><div class="col-span-2 mt-1 bg-slate-50 p-2 rounded-xl flex justify-between items-center"><span class="text-slate-500 font-bold uppercase tracking-widest text-[9px]">Saldo Akhir</span><span class="font-black ${d.final_balance < 0 ? 'text-rose-600' : 'text-emerald-600'} text-xs truncate max-w-[120px]">Rp ${formatRupiahInput((d.final_balance||0).toString())}</span></div></div><button onclick="openArchiveDetail('${doc.id}')" class="mt-3 w-full bg-slate-100 text-slate-600 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-slate-200 active:scale-95 transition flex items-center justify-center gap-1.5 shadow-sm"><svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>Lihat Data Anggota</button></div>`;
+            }).join('');
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const listM = document.getElementById('list-members'); if (listM && allMembers.length === 0) listM.innerHTML = window.getSkeletonHTML('2col');
+            setupRupiahFormatter(); bindDepositInputs('input-deposit-qty', 'input-deposit-nominal', 'deposit-kembalian'); bindDepositInputs('input-global-deposit-qty', 'input-global-deposit-nominal', 'global-deposit-kembalian');
+        });
+    </script>
 </body>
 </html>
