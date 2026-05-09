@@ -3,9 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <!-- Meta tag untuk PWA -->
+    <meta name="theme-color" content="#059669">
+    <link rel="apple-touch-icon" href="/icon-192.png">
+    <link rel="manifest" href="/manifest.json">
+    
     <title>PB. Batu Betulis App</title>
     <link rel="icon" href="https://firebase.google.com/favicon.ico" type="image/x-icon">
     <script src="https://cdn.tailwindcss.com"></script>
+    
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
 
@@ -28,11 +34,15 @@
         .bottom-nav-active { color: #059669; }
         .bottom-nav-active svg { fill: #059669; }
 
-        /* Logic Visibilitas Admin Global */
+        /* Logic Visibilitas Admin & Guest Global */
         .admin-only { display: none !important; }
         body.is-admin .admin-only { display: flex !important; }
+        
         .admin-block { display: none !important; }
         body.is-admin .admin-block { display: block !important; }
+
+        .guest-only { display: block !important; }
+        body.is-admin .guest-only { display: none !important; }
 
         /* Interaksi Kartu Member untuk Admin */
         body.is-admin .member-card { cursor: pointer; }
@@ -41,7 +51,16 @@
 </head>
 <body class="bg-slate-50 text-slate-900 pb-28">
 
-    <header class="bg-white border-b border-slate-100 sticky top-0 z-40 px-6 py-4 flex justify-between items-center">
+    <div id="initial-loader" class="fixed inset-0 bg-slate-50 z-[10000] flex flex-col items-center justify-center transition-opacity duration-500">
+        <svg class="animate-spin h-10 w-10 text-emerald-600 mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        <h1 class="text-sm font-bold text-emerald-800 tracking-widest uppercase animate-pulse">PB. Batu Betulis</h1>
+        <p class="text-[10px] text-slate-400 font-semibold mt-1">Mempersiapkan Sistem...</p>
+    </div>
+
+    <header class="bg-white border-b border-slate-100 sticky top-0 z-40 px-6 py-4 flex justify-between items-center shadow-sm">
         <div>
             <h1 class="text-lg font-bold text-emerald-800 tracking-tight uppercase">PB. Batu Betulis</h1>
             <div class="flex items-center gap-1">
@@ -64,7 +83,6 @@
     </header>
 
     <main class="container mx-auto max-w-md px-4 py-6">
-        
         <div class="grid grid-cols-5 gap-3 mb-6">
             <div class="col-span-3 bg-emerald-700 p-5 rounded-3xl text-center shadow-lg shadow-emerald-200/50 flex flex-col justify-center">
                 <p class="text-[9px] text-emerald-100 font-black uppercase tracking-widest mb-1.5">Saldo Kas Klub</p>
@@ -94,10 +112,9 @@
         <section id="tab-history" class="tab-content space-y-3">
             <div class="flex justify-between items-center px-2 mb-2 mt-4">
                 <h2 class="font-bold text-slate-800 italic text-sm">Log Aktivitas Kok</h2>
-                <!-- Refresh Button & Badge dihapus. Sistem otomatis realtime memantau 15 transaksi terbaru. -->
             </div>
             <div id="list-history" class="space-y-2"></div>
-            <button id="btn-load-history" onclick="loadMoreHistory()" class="hidden w-full py-3.5 mt-4 text-xs font-black uppercase tracking-widest text-slate-500 bg-slate-200/50 rounded-2xl active:scale-95 transition hover:bg-slate-200">Muat Data Lama ↓</button>
+            <button id="btn-load-history" onclick="loadMoreHistory()" class="hidden w-full py-3.5 mt-4 text-xs font-black uppercase tracking-widest text-slate-500 bg-slate-200/50 rounded-2xl active:scale-95 transition hover:bg-slate-200 shadow-sm">Muat Data Lama ↓</button>
         </section>
 
         <section id="tab-bku" class="tab-content space-y-3">
@@ -117,13 +134,28 @@
                     <h2 class="font-bold text-slate-800">Buku Kas Umum</h2>
                     <span class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Masuk & Keluar</span>
                 </div>
-                <!-- Refresh Button & Badge dihapus untuk BKU -->
             </div>
             <div id="list-bku" class="space-y-2"></div>
-            <button id="btn-load-bku" onclick="loadMoreBKU()" class="hidden w-full py-3.5 mt-4 text-xs font-black uppercase tracking-widest text-slate-500 bg-slate-200/50 rounded-2xl active:scale-95 transition hover:bg-slate-200">Muat Data Lama ↓</button>
+            <button id="btn-load-bku" onclick="loadMoreBKU()" class="hidden w-full py-3.5 mt-4 text-xs font-black uppercase tracking-widest text-slate-500 bg-slate-200/50 rounded-2xl active:scale-95 transition hover:bg-slate-200 shadow-sm">Muat Data Lama ↓</button>
         </section>
 
         <section id="tab-settings" class="tab-content space-y-3">
+            
+            <!-- Tombol Install PWA (Terlihat oleh Semua Orang, Default Hidden dari JS) -->
+            <div id="pwa-install-block" class="hidden mt-6 mb-6 p-5 bg-emerald-50 border border-emerald-200 rounded-3xl shadow-sm text-center">
+                <h3 class="text-[10px] font-black text-emerald-600 mb-2 uppercase tracking-widest flex items-center justify-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    </svg>
+                    Aplikasi Tersedia
+                </h3>
+                <p class="text-[9px] font-bold text-slate-500 leading-relaxed mb-4">Install aplikasi ini di layar utama HP Anda agar lebih cepat diakses seperti aplikasi biasa.</p>
+                <button id="btn-install-pwa" class="w-full bg-emerald-600 text-white py-3.5 rounded-2xl font-bold active:scale-95 transition uppercase text-xs tracking-widest shadow-lg shadow-emerald-200">
+                    INSTALL APLIKASI
+                </button>
+            </div>
+
+            <!-- Area Admin Saja -->
             <div class="admin-block space-y-4 mb-6">
                 <div class="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm border-l-4 border-l-purple-500">
                     <h3 class="text-[10px] font-black text-purple-600 mb-4 flex items-center gap-2 uppercase tracking-widest">Pengaturan Global</h3>
@@ -136,7 +168,6 @@
                     </div>
                 </div>
             </div>
-            <div class="text-center text-xs text-slate-400 mt-8 font-bold italic admin-block">Halaman ini hanya terlihat oleh Admin.</div>
             
             <div class="admin-block mt-6 p-5 bg-amber-50 border border-amber-200 rounded-3xl shadow-sm">
                 <h3 class="text-[10px] font-black text-amber-600 mb-2 flex items-center gap-2 uppercase tracking-widest">
@@ -166,7 +197,11 @@
                 </div>
             </div>
 
-            <div class="text-center text-xs text-slate-400 mt-8 font-bold italic admin-only hidden">Silakan login untuk melihat pengaturan.</div>
+            <!-- Pesan Untuk Tamu Saja -->
+            <div class="guest-only text-center text-[11px] text-slate-400 mt-8 font-bold italic border-t border-slate-200 pt-6">
+                Fitur pengaturan lainnya terkunci.<br>Silakan login sebagai pengurus untuk akses penuh.
+            </div>
+
         </section>
     </main>
 
@@ -174,12 +209,11 @@
     <div id="fab-overlay" onclick="toggleFabMenu()" class="hidden fixed inset-0 bg-slate-900/40 backdrop-blur-[2px] z-[45] transition-opacity duration-300 opacity-0"></div>
 
     <nav class="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t border-slate-100 px-2 pt-2 pb-4 flex justify-around items-end z-50">
-        <button onclick="showTab('tab-members', this)" class="nav-btn flex flex-col items-center gap-1 bottom-nav-active transition active:scale-90 w-16">
+        <button onclick="showTab('tab-members', this)" class="nav-btn flex flex-col items-center gap-1 bottom-nav-active transition active:scale-90 w-16 relative">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
             <span class="text-[9px] font-black uppercase tracking-tighter">ANGGOTA</span>
         </button>
         <button onclick="showTab('tab-history', this)" class="nav-btn relative flex flex-col items-center gap-1 text-slate-400 transition active:scale-90 w-16">
-            <!-- Nav-dot Badge Dihapus -->
             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
             <span class="text-[9px] font-black uppercase tracking-tighter">Log</span>
         </button>
@@ -217,11 +251,13 @@
         </div>
 
         <button onclick="showTab('tab-bku', this)" class="nav-btn relative flex flex-col items-center gap-1 text-slate-400 transition active:scale-90 w-16">
-            <!-- Nav-dot Badge Dihapus -->
             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
             <span class="text-[9px] font-black uppercase tracking-tighter">Kas</span>
         </button>
-        <button onclick="showTab('tab-settings', this)" class="nav-btn flex flex-col items-center gap-1 text-slate-400 transition active:scale-90 admin-only w-16">
+
+        <!-- Titik Merah PWA Berkedip diletakkan di dalam button Setting -->
+        <button onclick="showTab('tab-settings', this)" class="nav-btn relative flex flex-col items-center gap-1 text-slate-400 transition active:scale-90 w-16">
+            <span id="badge-setting-install" class="hidden absolute top-0 right-4 w-2.5 h-2.5 bg-rose-500 rounded-full animate-pulse shadow-[0_0_5px_rgba(244,63,94,0.6)]"></span>
             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
             <span class="text-[9px] font-black uppercase tracking-tighter">Setting</span>
         </button>
@@ -230,6 +266,7 @@
     <div id="modal-login" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100]">
         <div class="bg-white w-full max-w-md rounded-[32px] p-8 animate-slide-up shadow-2xl text-center"><h2 class="text-2xl font-bold mb-1">Login Pengurus</h2><p class="text-slate-400 text-sm mb-8">PB. Batu Betulis Management System</p><div class="space-y-4 mb-10"><input type="email" id="login-email" placeholder="Email" class="w-full bg-slate-50 p-4 rounded-2xl border-none focus:ring-2 focus:ring-emerald-500"><input type="password" id="login-pass" placeholder="Password" class="w-full bg-slate-50 p-4 rounded-2xl border-none focus:ring-2 focus:ring-emerald-500"><button id="btn-do-login" class="w-full bg-emerald-700 text-white py-4 rounded-2xl font-bold active:scale-95 transition">MASUK</button><button onclick="closeLogin()" class="w-full py-2 text-slate-400 font-bold text-xs uppercase tracking-widest">Batal</button></div></div>
     </div>
+    
     <div id="modal-add-member" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[110]">
         <div class="bg-white w-full max-w-md rounded-[32px] p-8 animate-slide-up shadow-2xl relative"><h2 class="text-xl font-bold mb-1 uppercase tracking-tight text-slate-800 text-center">Anggota Baru</h2><p class="text-slate-400 text-[10px] mb-6 font-bold uppercase tracking-widest italic text-center">Pendaftaran Anggota Klub</p><div class="space-y-4 mb-4"><input type="text" id="input-new-member" placeholder="Nama Lengkap Anggota" class="w-full bg-slate-50 p-4 rounded-2xl border-none text-sm font-bold focus:ring-2 focus:ring-slate-800"><button onclick="actionAddMember()" class="w-full bg-slate-800 text-white py-4 rounded-2xl font-bold active:scale-95 transition shadow-lg shadow-slate-200 uppercase text-xs tracking-widest">Simpan Anggota</button><button onclick="closeAddMemberModal()" class="w-full py-2 text-slate-400 font-bold text-xs uppercase tracking-widest">Batal</button></div></div>
     </div>
@@ -241,7 +278,7 @@
                 <div class="flex-1 pr-4">
                     <div class="flex items-center gap-2 mb-1">
                         <h2 id="profile-name" class="text-xl font-bold uppercase tracking-tight text-slate-800 truncate">Nama</h2>
-                        <button onclick="triggerEditName()" class="p-1.5 bg-slate-100 text-slate-500 rounded-lg active:scale-95 transition hover:text-emerald-600 flex-shrink-0" title="Edit Nama"><svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg></button>
+                        <button onclick="triggerEditName()" class="admin-only p-1.5 bg-slate-100 text-slate-500 rounded-lg active:scale-95 transition hover:text-emerald-600 flex-shrink-0" title="Edit Nama"><svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg></button>
                     </div>
                     <p class="text-[10px] font-bold uppercase tracking-widest italic text-slate-400">Profil Anggota</p>
                 </div>
@@ -442,15 +479,11 @@
             alert("Sistem gagal terhubung ke database. Coba muat ulang halaman.");
         }
 
-        // Global State
         let currentUser = null;
         let allMembers = [];
         let currentCockPrice = 3000;
         let currentProfileMemberId = null;
 
-        // ==========================================
-        // SMART ONSNAPSHOT STATE (HYBRID PAGINATION)
-        // ==========================================
         const FETCH_LIMIT = 15;
         
         let liveHistoryData = [];
@@ -463,9 +496,6 @@
         let bkuUnsub = null;
         let lastBkuCursorSnap = null;
 
-        // ==========================================
-        // HELPER FUNCTIONS
-        // ==========================================
         function formatRupiahInput(value) {
             if (!value) return '';
             let numberString = value.toString().replace(/[^,\d]/g, '');
@@ -616,12 +646,16 @@
             } else { 
                 if(loginBtn) loginBtn.classList.remove('hidden'); 
                 if(logoutBtn) logoutBtn.classList.add('hidden'); 
-                if(document.getElementById('tab-settings')?.classList.contains('active')) showTab('tab-members', document.querySelector('.nav-btn'));
             }
 
-            // Selalu mulai pendengar Live saat dimuat
             initLiveHistory();
             initLiveBKU();
+
+            const initLoader = document.getElementById('initial-loader');
+            if (initLoader) {
+                initLoader.classList.add('opacity-0');
+                setTimeout(() => initLoader.remove(), 500); 
+            }
         });
 
         function initLiveHistory() {
@@ -632,7 +666,6 @@
             historyUnsub = onSnapshot(q, (snap) => {
                 const newDocs = snap.docs.map(doc => ({ id: doc.id, docSnap: doc, ...doc.data() }));
 
-                // Seam Issue Fix: Mencegah data hilang saat terdorong keluar dari Top 15 live
                 if (liveHistoryData.length > 0) {
                     const newIds = new Set(newDocs.map(d => d.id));
                     const droppedItems = liveHistoryData.filter(oldDoc => !newIds.has(oldDoc.id));
@@ -641,14 +674,12 @@
                     });
                 }
 
-                // Tentukan kursor awal untuk Load More jika belum ada
                 if (!lastHistoryCursorSnap && snap.docs.length > 0) {
                     lastHistoryCursorSnap = snap.docs[snap.docs.length - 1];
                 }
 
                 liveHistoryData = newDocs;
                 
-                // Toggle Tombol Load More berdasar jumlah awal
                 const btn = document.getElementById('btn-load-history');
                 if(btn) {
                     if (liveHistoryData.length < FETCH_LIMIT && staticHistoryData.length === 0) btn.classList.add('hidden');
@@ -693,10 +724,9 @@
             const list = document.getElementById('list-history');
             if(!list) return;
 
-            // Gabungkan Live dan Static (Deduplikasi cerdas via Map)
             const combinedMap = new Map();
-            staticHistoryData.forEach(d => combinedMap.set(d.id, d)); // Masukkan static dulu
-            liveHistoryData.forEach(d => combinedMap.set(d.id, d));   // Live menimpa static jika ada ID sama
+            staticHistoryData.forEach(d => combinedMap.set(d.id, d));
+            liveHistoryData.forEach(d => combinedMap.set(d.id, d));
 
             const finalData = Array.from(combinedMap.values()).sort((a, b) => {
                 const timeA = a.timestamp?.toMillis ? a.timestamp.toMillis() : (a.timestamp || 0);
@@ -1025,12 +1055,10 @@
                     const actN = d.type === 'USAGE' ? -nA : nA; const delta = actN - d.amount; b.update(doc(db, "members", d.member_id), { shuttlecock_balance: increment(delta) });
                     if(d.type === 'DEPOSIT') { if (d.linked_bku_id) { const bSnap = await getDoc(doc(db, "bku_transactions", d.linked_bku_id)); if(bSnap.exists()) { const dC = (nA * currentCockPrice) - bSnap.data().amount; b.update(doc(db, "metadata", "stats"), { total_balance_bku: increment(dC), total_income_bku: increment(dC) }); b.update(doc(db, "bku_transactions", d.linked_bku_id), { amount: nA * currentCockPrice, note: nN }); } } else { const mD = delta * currentCockPrice; b.update(doc(db, "metadata", "stats"), { total_balance_bku: increment(mD), total_income_bku: increment(mD) }); } }
                     b.update(doc(db, col, id), { amount: actN, note: nN });
-                    // Sync array statis jika diedit dari sana
                     const idx = staticHistoryData.findIndex(x => x.id === id); if(idx !== -1) { staticHistoryData[idx].amount = actN; staticHistoryData[idx].note = nN; renderHistoryList(); }
                 } else {
                     const delta = nA - d.amount; if (d.type === 'DEBIT') b.update(doc(db, "metadata", "stats"), { total_balance_bku: increment(delta), total_income_bku: increment(delta) }); else b.update(doc(db, "metadata", "stats"), { total_balance_bku: increment(-delta), total_expense_bku: increment(delta) });
                     b.update(doc(db, col, id), { amount: nA, note: nN });
-                    // Sync array statis
                     const idx = staticBkuData.findIndex(x => x.id === id); if(idx !== -1) { staticBkuData[idx].amount = nA; staticBkuData[idx].note = nN; renderBKUList(); }
                 }
                 await b.commit(); closeEditModal();
@@ -1048,7 +1076,6 @@
                 if(type==='DEPOSIT') { if (d.linked_bku_id) { const bSnap = await getDoc(doc(db, "bku_transactions", d.linked_bku_id)); if(bSnap.exists()) { const eR = -bSnap.data().amount; b.update(doc(db, "metadata", "stats"), { total_balance_bku: increment(eR), total_income_bku: increment(eR) }); b.delete(doc(db, "bku_transactions", d.linked_bku_id)); } } else { const rev = -(d.amount * currentCockPrice); b.update(doc(db, "metadata", "stats"), { total_balance_bku: increment(rev), total_income_bku: increment(rev) }); } }
                 b.delete(doc(db, "shuttlecock_history", id)); await b.commit();
                 
-                // Sync statis array (hapus item)
                 staticHistoryData = staticHistoryData.filter(x => x.id !== id); renderHistoryList();
                 if(currentProfileMemberId) fetchMemberHistory(currentProfileMemberId);
                 appDialog({title: 'Terhapus', message: 'Log dihapus!', type: 'success'});
@@ -1065,7 +1092,6 @@
                 if (d.type === 'DEBIT') b.update(doc(db, "metadata", "stats"), { total_balance_bku: increment(-d.amount), total_income_bku: increment(-d.amount) }); else b.update(doc(db, "metadata", "stats"), { total_balance_bku: increment(d.amount), total_expense_bku: increment(-d.amount) });
                 b.delete(doc(db, "bku_transactions", id)); await b.commit();
                 
-                // Sync statis array
                 staticBkuData = staticBkuData.filter(x => x.id !== id); renderBKUList();
                 appDialog({title: 'Terhapus', message: 'Data kas dihapus!', type: 'success'});
             } catch (e) { appDialog({title: 'Error', message: e.message, type: 'error'}); }
@@ -1096,7 +1122,15 @@
                 const mbSnap = await getDocs(collection(db, "members")); const mData = mbSnap.docs.map(d => ({id: d.id, ...d.data()}));
                 
                 const fBatch = writeBatch(db); const ts = serverTimestamp(); const aName = "Periode s/d " + new Date().toLocaleDateString('id-ID', { day:'2-digit', month:'short', year:'numeric' });
-                fBatch.set(doc(collection(db, "archives_period")), { period_name: aName, total_income: st.total_income_bku||0, total_expense: st.total_expense_bku||0, final_balance: st.total_balance_bku||0, member_snapshots: mData.map(m => ({name: m.name, balance: m.shuttlecock_balance||0})), timestamp: ts });
+                
+                fBatch.set(doc(collection(db, "archives_period")), { 
+                    period_name: aName, 
+                    total_income: st.total_income_bku||0, 
+                    total_expense: st.total_expense_bku||0, 
+                    final_balance: st.total_balance_bku||0, 
+                    member_snapshots: mData.map(m => ({name: m.name, balance: m.shuttlecock_balance||0})),
+                    timestamp: ts 
+                });
 
                 const delBatches = async (col) => { let q = query(collection(db, col), limit(400)); let s = await getDocs(q); while (!s.empty) { const b = writeBatch(db); s.docs.forEach(d => b.delete(d.ref)); await b.commit(); s = await getDocs(q); } };
                 await delBatches("shuttlecock_history"); await delBatches("bku_transactions");
@@ -1109,7 +1143,6 @@
                 
                 await fBatch.commit();
                 
-                // BERSIHKAN STATIS ARRAY SETELAH TUTUP BUKU
                 staticHistoryData = []; staticBkuData = []; lastHistoryCursorSnap = null; lastBkuCursorSnap = null;
                 renderHistoryList(); renderBKUList();
                 
@@ -1121,7 +1154,7 @@
         window.openArchiveDetail = (id) => {
             const d = globalArchivesMap[id]; if(!d) return;
             document.getElementById('archive-detail-subtitle').innerText = d.period_name; const l = document.getElementById('archive-detail-list');
-            if (!d.member_snapshots || d.member_snapshots.length === 0) l.innerHTML = '<tr><td colspan="2" class="py-4 text-center text-[10px] text-slate-400 italic">Tidak ada data anggota tercatat.</td></tr>';
+            if (!d.member_snapshots || d.member_snapshots.length === 0) l.innerHTML = '<tr><td colspan="2" class="py-4 text-center text-[10px] text-slate-400 italic">Tidak ada data anggota tercatat di arsip ini.</td></tr>';
             else l.innerHTML = d.member_snapshots.sort((a,b) => a.name.localeCompare(b.name)).map(m => `<tr class="transition hover:bg-slate-50"><td class="py-2.5 px-3 align-middle max-w-[150px]"><div class="font-bold text-[11px] text-slate-800 tracking-tight uppercase truncate leading-tight">${m.name.toUpperCase()}</div></td><td class="py-2.5 px-3 align-middle text-right"><div class="font-black text-[12px] ${m.balance < 0 ? 'text-rose-600' : 'text-emerald-600'} leading-tight">${m.balance} Kok</div></td></tr>`).join('');
             document.getElementById('modal-archive-detail').classList.remove('hidden');
         };
@@ -1140,7 +1173,7 @@
             globalArchivesMap = {};
             l.innerHTML = snap.docs.map(doc => {
                 const d = doc.data(); globalArchivesMap[doc.id] = d;
-                return `<div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-sm"><div class="flex justify-between items-start mb-2 border-b border-slate-100 pb-2"><h4 class="text-[11px] font-black text-slate-700 uppercase tracking-tight leading-tight pt-1">${d.period_name}</h4><button onclick="actionDeleteArchive('${doc.id}')" class="p-1.5 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition active:scale-90" title="Hapus Arsip"><svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button></div><div class="grid grid-cols-2 gap-2 text-[10px]"><div><p class="text-slate-400 font-bold uppercase tracking-widest text-[8px] mb-0.5">Pemasukan</p><p class="font-black text-blue-600 truncate">Rp ${formatRupiahInput((d.total_income||0).toString())}</p></div><div><p class="text-slate-400 font-bold uppercase tracking-widest text-[8px] mb-0.5">Pengeluaran</p><p class="font-black text-rose-600 truncate">Rp ${formatRupiahInput((d.total_expense||0).toString())}</p></div><div class="col-span-2 mt-1 bg-slate-50 p-2 rounded-xl flex justify-between items-center"><span class="text-slate-500 font-bold uppercase tracking-widest text-[9px]">Saldo Akhir</span><span class="font-black ${d.final_balance < 0 ? 'text-rose-600' : 'text-emerald-600'} text-xs truncate max-w-[120px]">Rp ${formatRupiahInput((d.final_balance||0).toString())}</span></div></div><button onclick="openArchiveDetail('${doc.id}')" class="mt-3 w-full bg-slate-100 text-slate-600 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-slate-200 active:scale-95 transition flex items-center justify-center gap-1.5 shadow-sm"><svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>Lihat Data Anggota</button></div>`;
+                return `<div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-sm"><div class="flex justify-between items-start mb-2 border-b border-slate-100 pb-2"><h4 class="text-[11px] font-black text-slate-700 uppercase tracking-tight leading-tight pt-1">${d.period_name}</h4><button onclick="actionDeleteArchive('${doc.id}')" class="admin-only p-1.5 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition active:scale-90" title="Hapus Arsip"><svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button></div><div class="grid grid-cols-2 gap-2 text-[10px]"><div><p class="text-slate-400 font-bold uppercase tracking-widest text-[8px] mb-0.5">Pemasukan</p><p class="font-black text-blue-600 truncate">Rp ${formatRupiahInput((d.total_income||0).toString())}</p></div><div><p class="text-slate-400 font-bold uppercase tracking-widest text-[8px] mb-0.5">Pengeluaran</p><p class="font-black text-rose-600 truncate">Rp ${formatRupiahInput((d.total_expense||0).toString())}</p></div><div class="col-span-2 mt-1 bg-slate-50 p-2 rounded-xl flex justify-between items-center"><span class="text-slate-500 font-bold uppercase tracking-widest text-[9px]">Saldo Akhir</span><span class="font-black ${d.final_balance < 0 ? 'text-rose-600' : 'text-emerald-600'} text-xs truncate max-w-[120px]">Rp ${formatRupiahInput((d.final_balance||0).toString())}</span></div></div><button onclick="openArchiveDetail('${doc.id}')" class="mt-3 w-full bg-slate-100 text-slate-600 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-slate-200 active:scale-95 transition flex items-center justify-center gap-1.5 shadow-sm"><svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>Lihat Data Anggota</button></div>`;
             }).join('');
         });
 
@@ -1148,6 +1181,56 @@
             const listM = document.getElementById('list-members'); if (listM && allMembers.length === 0) listM.innerHTML = window.getSkeletonHTML('2col');
             setupRupiahFormatter(); bindDepositInputs('input-deposit-qty', 'input-deposit-nominal', 'deposit-kembalian'); bindDepositInputs('input-global-deposit-qty', 'input-global-deposit-nominal', 'global-deposit-kembalian');
         });
+
+        let deferredPrompt;
+        const installBlock = document.getElementById('pwa-install-block');
+        const btnInstallPwa = document.getElementById('btn-install-pwa');
+        const badgeInstall = document.getElementById('badge-setting-install');
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            
+            if(installBlock) installBlock.classList.remove('hidden');
+            if(badgeInstall) badgeInstall.classList.remove('hidden');
+        });
+
+        if(btnInstallPwa) {
+            btnInstallPwa.addEventListener('click', async () => {
+                if (deferredPrompt) {
+                    deferredPrompt.prompt();
+                    const { outcome } = await deferredPrompt.userChoice;
+                    console.log(`User response to the install prompt: ${outcome}`);
+                    deferredPrompt = null;
+                    
+                    installBlock.classList.add('hidden');
+                    if(badgeInstall) badgeInstall.classList.add('hidden');
+                }
+            });
+        }
+
+        window.addEventListener('appinstalled', () => {
+            if(installBlock) installBlock.classList.add('hidden');
+            if(badgeInstall) badgeInstall.classList.add('hidden');
+            deferredPrompt = null;
+            console.log('PWA berhasil diinstal oleh pengguna');
+        });
+
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                if (window.location.protocol === 'https:' || window.location.hostname === 'localhost') {
+                    navigator.serviceWorker.register('/sw.js')
+                        .then(registration => {
+                            console.log('Service Worker berhasil didaftarkan dengan scope:', registration.scope);
+                        })
+                        .catch(error => {
+                            console.warn('Pendaftaran Service Worker gagal:', error);
+                        });
+                } else {
+                    console.info('PWA dinonaktifkan di layar preview/blob. Silakan jalankan di domain HTTPS sungguhan.');
+                }
+            });
+        }
     </script>
 </body>
 </html>
